@@ -57,7 +57,7 @@ const App = () => {
               <Route path="/signin" element={<><UserAuthForm type="sign-in" /> <Footer /></>} />
               <Route path="/signup" element={<><UserAuthForm type="sign-up" /> <Footer /></>} />
               <Route path="/dashboard" element={<><SideNav /> <Footer /></>}>
-                <Route path="notifications" element={<><Notificactions /> <Footer /></>} />
+                <Route path="notifications" element={<><Notificactions /> </>} />
                 <Route path="blogs" element={<ManageBlog />} />
               </Route>
               <Route path="/settings" element={<SideNav />}>

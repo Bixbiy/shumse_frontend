@@ -357,7 +357,25 @@ const Navbar = () => {
               </button>
               {/* Theme Toggle Button */}
               <ThemeToggleButton />
+  <NavLink
+                    to="/dashboard/notifications"
+                    onClick={() => {
+                        setActivePage('Notification');
+                        setSideNavOpen(false);
+                    }}
+                    className={({ isActive }) =>
+                        `sidebar-link relative flex items-center gap-2 py-2 px-3 rounded hover:text-twitter transition ${isActive ? 'text-twitter font-semibold' : 'text-gray-800'
+                        }`
+                    }
+                >
+                    <i className="fi fi-rr-bell text-xl"></i>                  {
+                        new_notification_available ? <span className="bg-red rounded-full w-3 h-3 absolute z-10 top-2 left-2"></span> : ""
+                    }
 
+                    
+
+
+                </NavLink>
               {/* Create Button - Fixed to use <button> */}
               <button
                 className="hidden md:flex gap-2 items-center px-3 py-2 bg-blue-600 text-white rounded-full text-sm font-medium"
