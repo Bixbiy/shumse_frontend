@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import Navbar from "./components/navbar.component";
 import UserAuthForm from "./pages/userAuthForm.page";
+import { HelmetProvider } from 'react-helmet-async';
 import { createContext, useEffect, useState } from "react";
 import { lookInSession } from "./common/session";
 import Editor from "./pages/editor.pages";
@@ -9,10 +10,11 @@ import StoryEditor from "./pages/StoryEditor";
 import StoriesList from "./components/StoriesList";      // New component: list of stories
 // New component: story detail view
 import SearchPage from "./pages/search.page";
+import ReaditPage from "./pages/ReaditPage.jsx";
 import NotFound from "./pages/404.page";
 import ProfilePage from "./pages/profile.page";
 import BlogPage from "./pages/blog.page";
-import { HelmetProvider } from "react-helmet-async"; // Import HelmetProvider
+
 import SideNav from "./components/sidenavbar.component";
 import ChangePassword from "./pages/change-password.page";
 import EditProfile from "./pages/edit-profile.page";
@@ -68,7 +70,14 @@ const App = () => {
               <Route path="/search/:search_query" element={<><Navbar /><SearchPage /> <Footer /></>} />
               {/* Route for search tag */}
               <Route path="/search/tag/:search_query" element={<><Navbar /><SearchPage /> <Footer /></>} />
-
+ <Route 
+                    path="community"
+                    element={
+                      
+                        <ReaditPage />
+                     
+                    }
+                  />
               {/* Story Routes */}
               <Route path="/story-editor" element={<><Navbar /><StoryEditor /></>} />
               <Route path="/stories" element={<><StoriesList /> <Footer /></>} />

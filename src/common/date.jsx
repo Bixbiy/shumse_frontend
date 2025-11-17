@@ -102,6 +102,33 @@ export const formatReadingTime = (minutes = 0) => {
     const emoji = minutes < 2 ? '☕️' : minutes < 5 ? '📖' : '📚';
     return `${emoji} ${minutes} min read`;
 };
+export const getDay = (timestamp) => {
+    if (!timestamp) return "";
+
+    const date = new Date(timestamp);
+    const now = new Date();
+
+    // Calculate difference in days
+    const diffTime = now - date;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+
+    // Format as "15 Jan"
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+
+    // If not same year, show year also
+    if (year !== now.getFullYear()) {
+        return `${day} ${month} ${year}`;
+    }
+
+    return `${day} ${month}`;
+};
 
 // Export all date utilities as an object
 export const dateUtils = {
