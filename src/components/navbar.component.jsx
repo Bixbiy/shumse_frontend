@@ -387,7 +387,7 @@ const Navbar = () => {
 
               {/* --- NEW COMMUNITY LINK (FIX: Show on mobile) --- */}
               <NavLink
-                to="/community"
+                to="/readit/home"
                 className={({ isActive }) =>
                   `flex items-center justify-center w-10 h-10 md:w-auto md:px-3 md:py-2 rounded-full transition-colors ${
                     isActive
@@ -447,7 +447,7 @@ const Navbar = () => {
                     onClick={() => setUserNavPanel(prev => !prev)}
                     aria-label="User menu"
                     aria-expanded={userNavPanel}
-GCH            >
+           >
                     <img
                       src={profile_img}
                       alt="Profile"
@@ -469,7 +469,7 @@ GCH            >
                       </motion.div>
                     )}
                   </AnimatePresence>
-GCH            </div>
+       </div>
                 </>
               ) : (
                 <>

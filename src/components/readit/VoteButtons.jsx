@@ -1,131 +1,105 @@
-import React, { useState, useEffect, useContext, useCallback } from 'react';
-import { toast } from 'react-hot-toast';
+/*
+ * MODIFIED FILE (Complete Replacement)
+ * Path: src/components/readit/VoteButtons.jsx
+ */
+import React, { useContext } from 'react';
 import { userContext } from '../../App';
+import { useNavigate } from 'react-router-dom';
+import { useVotePost, useVoteComment } from '../../hooks/useReaditApi';
 
-const VoteButtons = ({ item, onVote, orientation = 'vertical', showCounts = false }) => {
+const VoteButtons = ({ item, isComment = false }) => {
+    // Add safety check for undefined item
+    if (!item) {
+        return (
+            <div className="flex flex-col items-center p-2 bg-gray-100 dark:bg-black rounded-l-lg">
+                <div className="text-2xl text-dark-grey p-1">
+                    <i className="fi fi-rr-arrow-up"></i>
+                </div>
+                <span className="font-bold my-1 text-lg text-dark-grey">0</span>
+                <div className="text-2xl text-dark-grey p-1">
+                    <i className="fi fi-rr-arrow-down"></i>
+                </div>
+            </div>
+        );
+    }
+
+    // Destructure with default values to prevent errors
+    const { 
+        _id = '', 
+        upvotedBy = [], 
+        downvotedBy = [], 
+        votes = 0 
+    } = item;
+
     const { userAuth } = useContext(userContext);
-    const userId = userAuth?.id;
+    const navigate = useNavigate();
 
-    const [localVote, setLocalVote] = useState(null);
-    const [localScore, setLocalScore] = useState(0);
-    const [localUpvotes, setLocalUpvotes] = useState(0);
-    const [localDownvotes, setLocalDownvotes] = useState(0);
-    const [isVoting, setIsVoting] = useState(false);
+    // USE THE NEW MUTATION HOOKS
+    const { mutate: votePost, isLoading: isVotingPost } = useVotePost();
+    const { mutate: voteComment, isLoading: isVotingComment } = useVoteComment();
 
-    // Initialize state from item props
-    useEffect(() => {
-        if (item) {
-            const userVote = userId ? 
-                (item.upvotedBy?.includes(userId) ? 'up' : 
-                 item.downvotedBy?.includes(userId) ? 'down' : null) : null;
-            
-            setLocalVote(userVote);
-            setLocalScore(item.votes || 0);
-            setLocalUpvotes(item.upvotesCount || item.upvotedBy?.length || 0);
-            setLocalDownvotes(item.downvotesCount || item.downvotedBy?.length || 0);
+    const isLoading = isVotingPost || isVotingComment;
+
+    const handleVote = (type) => {
+        if (!userAuth?.access_token) {
+            // Redirect to signin if user is not logged in
+            return navigate('/signin');
         }
-    }, [item, userId]);
 
-    const handleVote = useCallback(async (newVoteType) => {
-        if (!userId) {
-            toast.error('You must be logged in to vote');
+        if (!_id) {
+            console.error('Cannot vote: item ID is missing');
             return;
         }
 
-        if (isVoting) return;
-        setIsVoting(true);
+        const isUpvoted = upvotedBy.includes(userAuth.id);
+        const isDownvoted = downvotedBy.includes(userAuth.id);
 
-        const oldVote = localVote;
-        let finalVoteType = newVoteType;
+        let currentVote;
+        if (isUpvoted) currentVote = 'up';
+        if (isDownvoted) currentVote = 'down';
 
-        // If clicking the same vote, remove it
-        if (newVoteType === oldVote) {
-            finalVoteType = 'none';
+        const newVoteType = currentVote === type ? 'none' : type;
+        
+        // Call the correct mutation based on the prop
+        if (isComment) {
+            voteComment({ commentId: _id, voteType: newVoteType });
+        } else {
+            votePost({ postId: _id, voteType: newVoteType });
         }
+    };
 
-        // Optimistic update
-        let newUpvotes = localUpvotes;
-        let newDownvotes = localDownvotes;
-
-        // Remove old vote
-        if (oldVote === 'up') newUpvotes--;
-        if (oldVote === 'down') newDownvotes--;
-
-        // Add new vote
-        if (finalVoteType === 'up') newUpvotes++;
-        if (finalVoteType === 'down') newDownvotes++;
-
-        setLocalUpvotes(newUpvotes);
-        setLocalDownvotes(newDownvotes);
-        setLocalScore(newUpvotes - newDownvotes);
-        setLocalVote(finalVoteType === 'none' ? null : finalVoteType);
-
-        try {
-            await onVote(item._id, finalVoteType);
-        } catch (err) {
-            // Revert on error
-            toast.error('Vote failed');
-            const originalUpvotes = item.upvotesCount || item.upvotedBy?.length || 0;
-            const originalDownvotes = item.downvotesCount || item.downvotedBy?.length || 0;
-            const originalUserVote = userId ? 
-                (item.upvotedBy?.includes(userId) ? 'up' : 
-                 item.downvotedBy?.includes(userId) ? 'down' : null) : null;
-
-            setLocalUpvotes(originalUpvotes);
-            setLocalDownvotes(originalDownvotes);
-            setLocalScore(originalUpvotes - originalDownvotes);
-            setLocalVote(originalUserVote);
-        } finally {
-            setIsVoting(false);
-        }
-    }, [userId, localVote, localUpvotes, localDownvotes, item, onVote, isVoting]);
-
-    const isVertical = orientation === 'vertical';
+    // Determine vote status from props with safety checks
+    const isUpvoted = userAuth?.id ? upvotedBy.includes(userAuth.id) : false;
+    const isDownvoted = userAuth?.id ? downvotedBy.includes(userAuth.id) : false;
 
     return (
-        <div className={`flex ${isVertical ? 'flex-col items-center' : 'flex-row items-center space-x-2'}`}>
+        <div className="flex flex-col items-center p-2 bg-gray-100 dark:bg-black rounded-l-lg">
             <button
                 onClick={() => handleVote('up')}
-                disabled={isVoting}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                    localVote === 'up'
-                        ? 'text-orange-500 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800'
-                        : 'text-gray-500 dark:text-gray-400 hover:text-orange-500 hover:bg-gray-50 dark:hover:bg-gray-800 border border-transparent'
-                } ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isLoading}
+                className={`text-2xl hover:bg-grey-light dark:hover:bg-grey rounded-full p-1 transition-colors ${
+                    isUpvoted ? 'text-blue' : 'text-dark-grey'
+                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 aria-label="Upvote"
             >
-                <i className={`fi fi-rr-arrow-up text-lg ${localVote === 'up' ? 'fi-sr' : ''}`}></i>
+                <i className="fi fi-rr-arrow-up"></i>
             </button>
-
-            <div className={`flex flex-col items-center ${isVertical ? 'my-2' : 'mx-2'}`}>
-                <span className={`font-bold ${
-                    localScore > 0 ? 'text-orange-500' : 
-                    localScore < 0 ? 'text-blue-500' : 
-                    'text-gray-500 dark:text-gray-400'
-                } text-sm`}>
-                    {localScore}
-                </span>
-                
-                {showCounts && (
-                    <div className="flex space-x-1 text-xs text-gray-400 mt-1">
-                        <span className="text-orange-500">+{localUpvotes}</span>
-                        <span>/</span>
-                        <span className="text-blue-500">-{localDownvotes}</span>
-                    </div>
-                )}
-            </div>
-
+            <span 
+                className={`font-bold my-1 text-lg ${
+                    isUpvoted ? 'text-blue' : isDownvoted ? 'text-red' : 'text-dark-grey'
+                }`}
+            >
+                {votes}
+            </span>
             <button
                 onClick={() => handleVote('down')}
-                disabled={isVoting}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                    localVote === 'down'
-                        ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
-                        : 'text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:bg-gray-50 dark:hover:bg-gray-800 border border-transparent'
-                } ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isLoading}
+                className={`text-2xl hover:bg-grey-light dark:hover:bg-grey rounded-full p-1 transition-colors ${
+                    isDownvoted ? 'text-red' : 'text-dark-grey'
+                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 aria-label="Downvote"
             >
-                <i className={`fi fi-rr-arrow-down text-lg ${localVote === 'down' ? 'fi-sr' : ''}`}></i>
+                <i className="fi fi-rr-arrow-down"></i>
             </button>
         </div>
     );

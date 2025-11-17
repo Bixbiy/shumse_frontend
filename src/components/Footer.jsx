@@ -21,7 +21,7 @@ const siteLinks = [
 ];
 
 const Footer = () => (
-    <footer className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white pt-12 pb-6 px-4 mt-16">
+    <footer className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white  pb-6 px-4 ">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:justify-between gap-10">
             {/* Logo and Address */}
             <div className="flex-1 min-w-[220px]">
