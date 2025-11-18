@@ -1,20 +1,9 @@
-// src/hooks/useReaditApi.js - FIXED VERSION
+// src/hooks/useReaditApi.js - UPDATED VERSION
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 import { useContext } from 'react';
 import { userContext } from '../App';
 import { toast } from 'react-hot-toast';
-
-// Get the domain from your environment variables
-const API_DOMAIN = import.meta.env.VITE_SERVER_DOMAIN + "/api/v1";
-
-// Helper to get auth headers - returns empty object if no token
-const getAuthHeaders = (token) => {
-    if (!token) return {};
-    return {
-        'Authorization': `Bearer ${token}`
-    };
-};
+import api from '../common/api'; // <-- Use your working axios instance
 
 // === API Fetching Hooks ===
 
@@ -25,9 +14,8 @@ export const useHomeFeed = (sort) => {
     return useInfiniteQuery({
         queryKey: ['readitFeed', sort],
         queryFn: ({ pageParam = 1 }) => 
-            axios.get(`${API_DOMAIN}/readit/posts/feed?sort=${sort}&page=${pageParam}&limit=10`, {
-                headers: getAuthHeaders(userAuth?.access_token)
-            }).then(res => res.data),
+            api.get(`/readit/posts/feed?sort=${sort}&page=${pageParam}&limit=10`)
+                .then(res => res.data),
         getNextPageParam: (lastPage) => {
             return lastPage.hasMore ? lastPage.page + 1 : undefined;
         },
@@ -39,7 +27,7 @@ export const useHomeFeed = (sort) => {
 export const useCommunity = (communityName) => {
     return useQuery({
         queryKey: ['community', communityName],
-        queryFn: () => axios.get(`${API_DOMAIN}/readit/c/${communityName}`).then(res => res.data),
+        queryFn: () => api.get(`/readit/c/${communityName}`).then(res => res.data),
         staleTime: 1000 * 60 * 5 // Cache community data for 5 minutes
     });
 };
@@ -49,7 +37,7 @@ export const useCommunityPosts = (communityName, sort) => {
     return useInfiniteQuery({
         queryKey: ['communityPosts', communityName, sort],
         queryFn: ({ pageParam = 1 }) => 
-            axios.get(`${API_DOMAIN}/readit/c/${communityName}/posts?sort=${sort}&page=${pageParam}&limit=10`)
+            api.get(`/readit/c/${communityName}/posts?sort=${sort}&page=${pageParam}&limit=10`)
                 .then(res => res.data),
         getNextPageParam: (lastPage) => {
             return lastPage.hasMore ? lastPage.page + 1 : undefined;
@@ -62,7 +50,7 @@ export const useCommunityPosts = (communityName, sort) => {
 export const useReaditPost = (postId) => {
     return useQuery({
         queryKey: ['readitPost', postId],
-        queryFn: () => axios.get(`${API_DOMAIN}/readit/posts/${postId}`).then(res => res.data),
+        queryFn: () => api.get(`/readit/posts/${postId}`).then(res => res.data),
         staleTime: 1000 * 60 * 5,
         enabled: !!postId
     });
@@ -73,7 +61,7 @@ export const usePublicFeed = (sort) => {
     return useInfiniteQuery({
         queryKey: ['publicFeed', sort],
         queryFn: ({ pageParam = 1 }) => 
-            axios.get(`${API_DOMAIN}/readit/posts/public?sort=${sort}&page=${pageParam}&limit=10`)
+            api.get(`/readit/posts/public?sort=${sort}&page=${pageParam}&limit=10`)
                 .then(res => res.data),
         getNextPageParam: (lastPage) => {
             return lastPage.hasMore ? lastPage.page + 1 : undefined;
@@ -85,7 +73,7 @@ export const usePublicFeed = (sort) => {
 export const usePopularCommunities = () => {
     return useQuery({
         queryKey: ['popularCommunities'],
-        queryFn: () => axios.get(`${API_DOMAIN}/readit/communities/popular`).then(res => res.data),
+        queryFn: () => api.get(`/readit/communities/popular`).then(res => res.data),
         staleTime: 1000 * 60 * 30 // Cache for 30 minutes
     });
 };
@@ -101,7 +89,7 @@ export const usePostComments = (postId, sort) => {
     return useInfiniteQuery({
         queryKey: ['readitComments', postId, sort],
         queryFn: ({ pageParam = 1 }) => 
-            axios.get(`${API_DOMAIN}/readit/posts/${postId}/comments?sort=${sort}&page=${pageParam}&limit=10`)
+            api.get(`/readit/posts/${postId}/comments?sort=${sort}&page=${pageParam}&limit=10`)
                 .then(res => res.data),
         getNextPageParam: (lastPage) => {
             return lastPage.hasMore ? lastPage.page + 1 : undefined;
@@ -117,7 +105,7 @@ export const useCommentReplies = (commentId) => {
     return useInfiniteQuery({
         queryKey: ['readitCommentReplies', commentId],
         queryFn: ({ pageParam = 1 }) =>
-            axios.get(`${API_DOMAIN}/readit/comments/${commentId}/replies?page=${pageParam}&limit=5`)
+            api.get(`/readit/comments/${commentId}/replies?page=${pageParam}&limit=5`)
                 .then(res => res.data),
         getNextPageParam: (lastPage) => {
             return lastPage.hasMore ? lastPage.page + 1 : undefined;
@@ -137,9 +125,7 @@ export const useVotePost = () => {
 
     return useMutation({
         mutationFn: ({ postId, voteType }) => 
-            axios.put(`${API_DOMAIN}/readit/posts/${postId}/vote`, { voteType }, {
-                headers: getAuthHeaders(userAuth?.access_token)
-            }),
+            api.put(`/readit/posts/${postId}/vote`, { voteType }),
         
         onSuccess: (data, variables) => {
             const { postId } = variables;
@@ -176,9 +162,7 @@ export const useVoteComment = () => {
 
     return useMutation({
         mutationFn: ({ commentId, voteType }) =>
-            axios.put(`${API_DOMAIN}/readit/comments/${commentId}/vote`, { voteType }, {
-                headers: getAuthHeaders(userAuth?.access_token)
-            }),
+            api.put(`/readit/comments/${commentId}/vote`, { voteType }),
         
         onSuccess: (data, variables) => {
             queryClient.invalidateQueries({ queryKey: ['readitComments'] });
@@ -200,9 +184,7 @@ export const useCreateReaditComment = () => {
 
     return useMutation({
         mutationFn: ({ postId, content, parent = null }) =>
-            axios.post(`${API_DOMAIN}/readit/posts/${postId}/comments`, { content, parent }, {
-                headers: getAuthHeaders(userAuth?.access_token)
-            }),
+            api.post(`/readit/posts/${postId}/comments`, { content, parent }),
         
         onSuccess: (data, variables) => {
             const { postId, parent } = variables;
@@ -230,15 +212,13 @@ export const useCreateReaditPost = () => {
 
     return useMutation({
         mutationFn: ({ communityName, title, content, postType = 'text', url, image, flair }) =>
-            axios.post(`${API_DOMAIN}/readit/c/${communityName}/posts`, {
+            api.post(`/readit/c/${communityName}/posts`, {
                 title,
                 content,
                 postType,
                 url,
                 image,
                 flair
-            }, {
-                headers: getAuthHeaders(userAuth?.access_token)
             }),
         
         onSuccess: (data, variables) => {
@@ -265,13 +245,11 @@ export const useCreateReaditCommunity = () => {
 
     return useMutation({
         mutationFn: ({ name, title, description, icon }) =>
-            axios.post(`${API_DOMAIN}/readit/communities`, {
+            api.post(`/readit/communities`, {
                 name,
                 title,
                 description,
                 icon
-            }, {
-                headers: getAuthHeaders(userAuth?.access_token)
             }),
         
         onSuccess: (data) => {
@@ -294,9 +272,7 @@ export const useJoinCommunity = () => {
 
     return useMutation({
         mutationFn: (communityName) =>
-            axios.post(`${API_DOMAIN}/readit/c/${communityName}/join`, {}, {
-                headers: getAuthHeaders(userAuth?.access_token)
-            }),
+            api.post(`/readit/c/${communityName}/join`, {}),
         
         onSuccess: (data, variables) => {
             queryClient.invalidateQueries({ queryKey: ['community', variables] });

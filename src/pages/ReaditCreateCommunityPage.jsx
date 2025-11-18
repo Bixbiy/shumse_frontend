@@ -1,10 +1,10 @@
-// src/pages/ReaditCreateCommunityPage.jsx - NEW FILE
+// src/pages/ReaditCreateCommunityPage.jsx - FIXED VERSION
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { userContext } from '../App';
 import { useCreateReaditCommunity } from '../hooks/useReaditApi';
 import { Helmet } from 'react-helmet-async';
-import { uploadImage } from '../common/api';
+import { UploadImage } from '../common/aws'; // <-- Fix import path and name
 import toast from 'react-hot-toast';
 import Loader from '../components/loader.component';
 
@@ -32,6 +32,7 @@ const ReaditCreateCommunityPage = () => {
 
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
+        console.log(file)
         if (!file) return;
 
         if (file.size > 5 * 1024 * 1024) { // 5MB limit
@@ -41,11 +42,13 @@ const ReaditCreateCommunityPage = () => {
 
         setUploading(true);
         try {
-            const uploadedUrl = await uploadImage(file);
-            setFormData(prev => ({ ...prev, icon: uploadedUrl }));
+            const result = await UploadImage(file); // <-- Use UploadImage (capital U)
+            setFormData(prev => ({ ...prev, icon: result.url })); // <-- Access result.url
+console.log(result)
             toast.success('Community icon uploaded!');
         } catch (error) {
-            toast.error('Failed to upload image');
+            console.log('Upload error:', error);
+            toast.error(error.message || 'Failed to upload image');
         } finally {
             setUploading(false);
         }

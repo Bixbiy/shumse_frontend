@@ -1,65 +1,33 @@
+// ── src/common/api.js ──
+// This new file manages all your API requests.
+// It automatically adds the /api/v1 prefix.
+
 import axios from "axios";
-import { lookInSession } from "./session";
 
-export const baseURL = import.meta.env.VITE_SERVER_DOMAIN;
+// Get the user from session storage
+const getSessionUser = () => {
+    const data = sessionStorage.getItem("user");
+    return data ? JSON.parse(data) : null;
+};
 
-const axiosInstance = axios.create({
-  baseURL: `${baseURL}/api/v1`,
+const api = axios.create({
+    baseURL: `${import.meta.env.VITE_SERVER_DOMAIN}/api/v1`,
 });
 
-// Interceptor to automatically add the auth token to every request
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const accessToken = lookInSession("user")?.access_token;
-    
-    if (accessToken) {
-      config.headers["Authorization"] = `Bearer ${accessToken}`;
+// Use an interceptor to automatically add the auth token to every request
+api.interceptors.request.use(
+    (config) => {
+        const user = getSessionUser();
+        if (user && user.access_token) {
+            config.headers['Authorization'] = `Bearer ${user.access_token}`;
+        }
+         
+        return config;
+      
+    },
+    (error) => {
+        return Promise.reject(error);
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
 );
 
-export const uploadImage = (img) => {
-  let formData = new FormData();
-  formData.append("image", img);
-
-  return axiosInstance.post("/upload", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-};
-
-// --- New Readit API functions ---
-// We can add specific API functions here for clarity
-
-export const apiCreateReaditPost = (postData) => {
-  return axiosInstance.post("/readit/posts", postData);
-};
-
-export const apiGetAllReaditPosts = () => {
-  return axiosInstance.get("/readit/posts");
-};
-
-export const apiGetReaditPost = (postId) => {
-  return axiosInstance.get(`/readit/posts/${postId}`);
-};
-
-export const apiVoteReaditPost = (postId, voteType) => {
-  return axiosInstance.put(`/readit/posts/${postId}/vote`, { voteType });
-};
-
-export const apiCreateReaditComment = (postId, commentData) => {
-  return axiosInstance.post(`/readit/posts/${postId}/comments`, commentData);
-};
-
-export const apiGetReaditComments = (postId) => {
-  return axiosInstance.get(`/readit/posts/${postId}/comments`);
-};
-
-export const apiVoteReaditComment = (commentId, voteType) => {
-  return axiosInstance.put(`/readit/comments/${commentId}/vote`, { voteType });
-};
-
-export default axiosInstance;
+export default api;
