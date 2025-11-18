@@ -1,11 +1,9 @@
 /*
- * MODIFIED FILE
- * Path: src/context/SocketContext.jsx
+ * OPTIMIZED SocketContext.jsx - PREVENTS RE-RENDERS
  */
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { userContext } from '../App';
-import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 const SocketContext = createContext();
@@ -17,76 +15,54 @@ export const useSocket = () => {
 export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const { userAuth } = useContext(userContext);
-    
-    // Safely get queryClient
-    let queryClient;
-    try {
-        queryClient = useQueryClient();
-    } catch (error) {
-        console.warn('QueryClient not available in SocketProvider:', error.message);
-    }
+    const socketRef = useRef(null); // Use ref to prevent re-renders
 
     useEffect(() => {
-        // Connect to the socket server
+        // Only create socket once
+        if (socketRef.current) return;
+
+        console.log("🔄 Creating socket connection...");
         const newSocket = io(import.meta.env.VITE_SERVER_DOMAIN, {
-            withCredentials: true, 
+            withCredentials: true,
         });
 
-        // Debugging listeners
+        socketRef.current = newSocket;
+
         newSocket.on('connect', () => {
-            console.log("Socket connected:", newSocket.id);
+            console.log("✅ Socket connected:", newSocket.id);
+            setSocket(newSocket); // Only set state once when connected
         });
 
         newSocket.on('connect_error', (err) => {
-            console.error("Socket connection error:", err.message);
+            console.error("❌ Socket connection error:", err.message);
         });
 
-        // --- NEW: Real-time listeners ---
-        
-        // Listener for new notifications
         newSocket.on('new_notification', (notification) => {
-            console.log('New notification received:', notification);
+            console.log('📢 New notification received');
             toast('You have a new notification!', { icon: '🔔' });
-            
-            if (queryClient) {
-                queryClient.invalidateQueries({ queryKey: ['newNotificationCheck'] });
-                queryClient.invalidateQueries({ queryKey: ['notifications'] });
-            }
         });
 
-        // Listener for post votes
-        newSocket.on('readitPostVoted', ({ postId, votes, upvotedBy, downvotedBy }) => {
-            if (queryClient) {
-                queryClient.setQueryData(['readitPost', postId], (oldData) => {
-                    if (!oldData) return;
-                    return { ...oldData, votes, upvotedBy, downvotedBy };
-                });
-                queryClient.invalidateQueries({ queryKey: ['readitFeed'] });
-                queryClient.invalidateQueries({ queryKey: ['communityPosts'] });
-            }
+        newSocket.on('readitPostVoted', ({ postId, votes }) => {
+            console.log('👍 Post voted:', postId);
         });
         
-        // Listener for new comments
         newSocket.on('newReaditComment', (comment) => {
-            if (queryClient) {
-                queryClient.invalidateQueries({ queryKey: ['readitComments', comment.post] });
-                queryClient.invalidateQueries({ queryKey: ['readitPost', comment.post] });
-            }
+            console.log('💬 New comment received');
         });
 
-        setSocket(newSocket);
-
-        // --- NEW: Join notification room when user logs in ---
-        if (userAuth && userAuth.id) {
+        // Join notification room when user logs in
+        if (userAuth?.id) {
             newSocket.emit('joinNotificationRoom', { userId: userAuth.id });
         }
 
-        // Disconnect on component unmount
         return () => {
-            console.log("Disconnecting socket...");
-            newSocket.disconnect();
+            console.log("🔌 Disconnecting socket...");
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+                socketRef.current = null;
+            }
         };
-    }, [queryClient, userAuth]); // Add dependencies
+    }, []); // Empty dependency array - only run once
 
     return (
         <SocketContext.Provider value={{ socket }}>

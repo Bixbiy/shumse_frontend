@@ -1,16 +1,15 @@
 /*
- * MODIFIED FILE (Complete Replacement)
+ * MODIFIED FILE
  * Path: src/App.jsx
  */
 import { Route, Routes } from "react-router-dom";
 import { HelmetProvider } from 'react-helmet-async';
 import { createContext, useEffect, useState, Suspense, lazy } from "react";
 import { lookInSession } from "./common/session";
+import { setAuthToken } from "./common/api"; // <-- Import the helper
 
-// CORE LAYOUT
-import Layout from "./components/Layout.jsx"; // <-- Import your main layout
-import Navbar from "./components/navbar.component"; // <-- Keep for standalone routes
-import Footer from "./components/Footer.jsx"; // <-- Keep for standalone routes
+
+
 import SideNav from "./components/sidenavbar.component";
 
 // CONTEXT
@@ -30,8 +29,10 @@ import EditProfile from "./pages/edit-profile.page";
 import Notificactions from "./pages/notifications.page";
 import ManageBlog from "./pages/manage-blogs.page";
 import ContactPage from "./pages/Contact.page";
+import Navbar from "./components/navbar.component.jsx";
+import Footer from "./components/Footer.jsx"; 
 
-// STORY IMPORTS (Keep as-is)
+// STORY IMPORTS
 import StoryEditor from "./pages/StoryEditor";
 import StoriesList from "./components/StoriesList";
 import StoryViewerModal from "./components/StoryViewer";
@@ -44,7 +45,6 @@ const ReaditSubmitPage = lazy(() => import('./pages/ReaditSubmitPage.jsx'));
 const ReaditCreateCommunityPage = lazy(() => import('./pages/ReaditCreateCommunityPage.jsx'));
 const ReaditCreatePostPage = lazy(() => import('./pages/ReaditCreatePostPage.jsx'));
 
-// Optimized loading component
 const LoadingFallback = () => (
     <div className="flex justify-center items-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
@@ -60,6 +60,13 @@ const App = () => {
             try {
                 const parsedUser = typeof userInSession === "string" ? JSON.parse(userInSession) : userInSession;
                 setUserAuth(parsedUser);
+                
+                // --- CRITICAL: Initialize Axios Token immediately ---
+                if (parsedUser.access_token) {
+                    setAuthToken(parsedUser.access_token);
+                }
+                // ---------------------------------------------------
+
             } catch (error) {
                 console.error("Error parsing user session data:", error);
                 setUserAuth({ access_token: null });
@@ -77,7 +84,7 @@ const App = () => {
                         <Suspense fallback={<LoadingFallback />}>
                             <Routes>
                                 {/* Routes WITH Navbar & Footer */}
-                                <Route path="/" element={<Layout />}>
+                                <Route path="/" element={<><Navbar/><Footer/></>}>
                                     <Route index element={<HomePage />} />
                                     <Route path="contact" element={<ContactPage />} />
                                     <Route path="search/:search_query" element={<SearchPage />} />
@@ -90,8 +97,7 @@ const App = () => {
                                     <Route path="stories/trending" element={<StoriesList />} />
                                     <Route path="story/:story_id" element={<StoryViewerModal />} />
                                     
-                                    {/* --- NEW READIT ROUTES (NESTED) --- */}
-                                    {/* This is the new, correct structure */}
+                                    {/* --- READIT ROUTES --- */}
                                     <Route path="readit">
                                         <Route path="home" element={<ReaditHomePage />} />
                                         <Route path="c/:communityName" element={<ReaditCommunityPage />} />
@@ -99,15 +105,13 @@ const App = () => {
                                         <Route path="create-post" element={<ReaditCreatePostPage />} />
                                         <Route path="post/:postId" element={<ReaditPostPage />} />
                                         <Route path="c/:communityName/submit" element={<ReaditSubmitPage />} />
-                                        {/* Redirect /readit to /readit/home */}
                                         <Route index element={<ReaditHomePage />} />
                                     </Route>
-                                    {/* --- END READIT ROUTES --- */}
                                     
                                     <Route path="*" element={<NotFound />} />
                                 </Route>
 
-                                {/* Routes with SideNav (Dashboard) */}
+                                {/* Dashboard Routes */}
                                 <Route path="/dashboard" element={<SideNav />}>
                                     <Route path="notifications" element={<Notificactions />} />
                                     <Route path="blogs" element={<ManageBlog />} />
@@ -120,7 +124,7 @@ const App = () => {
                                     <Route index element={<EditProfile />} />
                                 </Route>
 
-                                {/* Fullscreen Routes (No Navbar/Footer by default) */}
+                                {/* Fullscreen Routes */}
                                 <Route path="/editor" element={<Editor />} />
                                 <Route path="/editor/:blog_id" element={<Editor />} />
                                 <Route path="/story-editor" element={<StoryEditor />} />

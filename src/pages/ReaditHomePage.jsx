@@ -1,289 +1,267 @@
-// src/pages/ReaditHomePage.jsx - OPTIMIZED VERSION
-import React, { useContext, useState, useMemo, useCallback } from 'react';
+/*
+ * PATH: src/pages/ReaditHomePage.jsx
+ */
+import React, { useContext, useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { userContext } from '../App';
-import { useHomeFeed, usePublicFeed, usePopularCommunities } from '../hooks/useReaditApi';
+import axiosInstance from '../common/api'; 
+import { toast } from 'react-hot-toast';
 import ReaditPostCard from '../components/readit/ReaditPostCard';
-import Loader from '../components/loader.component';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import InPageNavigation from '../components/inpage-navigation.component';
+import Loader from '../components/loader.component'; 
+
+// Simple skeleton for loading state
+const PostCardSkeleton = () => (
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 shadow-sm border border-gray-200 dark:border-gray-700 animate-pulse">
+        <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+            <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        </div>
+        <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+        <div className="h-20 w-full bg-gray-200 dark:bg-gray-700 rounded"></div>
+    </div>
+);
 
 const ReaditHomePage = () => {
     const { userAuth } = useContext(userContext);
+    
+    // UI State
+    const [activeTab, setActiveTab] = useState('Popular Posts');
     const [sort, setSort] = useState('hot');
     const [showCreateMenu, setShowCreateMenu] = useState(false);
     
-    // Memoized user status
+    // Data State
+    const [posts, setPosts] = useState([]);
+    const [popularCommunities, setPopularCommunities] = useState([]);
+    
+    // Loading State
+    const [isLoading, setIsLoading] = useState(true);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+
+    // Pagination Refs
+    const page = useRef(1);
+    const hasMore = useRef(true);
+
     const isLoggedIn = useMemo(() => !!userAuth?.access_token, [userAuth]);
-    
-    // Personalized feed for logged-in users
-    const { 
-        data: homeFeedData, 
-        isLoading: homeFeedLoading, 
-        fetchNextPage: fetchNextHomePage,
-        hasNextPage: hasNextHomePage,
-        isFetchingNextPage: isFetchingNextHomePage
-    } = useHomeFeed(sort);
-    
-    // Public feed for non-logged-in users
-    const { 
-        data: publicFeedData, 
-        isLoading: publicFeedLoading, 
-        fetchNextPage: fetchNextPublicPage,
-        hasNextPage: hasNextPublicPage,
-        isFetchingNextPage: isFetchingNextPublicPage
-    } = usePublicFeed(sort);
-    
-    const { data: popularCommunities, isLoading: communitiesLoading } = usePopularCommunities();
 
-    // Memoized derived state
-    const isLoading = homeFeedLoading || publicFeedLoading;
-    const feedData = isLoggedIn ? homeFeedData : publicFeedData;
-    const hasNextPage = isLoggedIn ? hasNextHomePage : hasNextPublicPage;
-    const fetchNextPage = isLoggedIn ? fetchNextHomePage : fetchNextPublicPage;
-    const isFetchingNextPage = isLoggedIn ? isFetchingNextHomePage : isFetchingNextPublicPage;
+    // --- DATA FETCHING ---
 
-    // Memoized callbacks
-    const handleSortChange = useCallback((newSort) => {
-        setSort(newSort);
+    const fetchPopularCommunities = async () => {
+        try {
+            const { data } = await axiosInstance.get('/readit/communities/popular');
+            setPopularCommunities(data || []);
+        } catch (err) {
+            console.error("Failed to fetch communities:", err);
+        }
+    };
+
+    const fetchPosts = useCallback(async (isReset = false) => {
+        if (isReset) {
+            page.current = 1;
+            hasMore.current = true;
+            setPosts([]);
+            setIsLoading(true);
+        } else {
+            setIsFetchingMore(true);
+        }
+
+        // Logic to determine endpoint
+        let endpoint = '/readit/posts/public';
+        if (activeTab === 'Your Feed' && isLoggedIn) {
+            endpoint = '/readit/posts/feed';
+        }
+
+        try {
+            const { data } = await axiosInstance.get(`${endpoint}?sort=${sort}&page=${page.current}&limit=10`);
+            
+            if (isReset) {
+                setPosts(data.posts || []);
+            } else {
+                setPosts(prev => [...prev, ...(data.posts || [])]);
+            }
+
+            hasMore.current = data.hasMore;
+            page.current += 1;
+
+        } catch (err) {
+            console.error("Failed to fetch posts:", err);
+            toast.error("Could not load posts");
+        } finally {
+            setIsLoading(false);
+            setIsFetchingMore(false);
+        }
+    }, [activeTab, sort, isLoggedIn]);
+
+    // --- EFFECTS ---
+
+    useEffect(() => {
+        fetchPopularCommunities();
     }, []);
 
-    const toggleCreateMenu = useCallback(() => {
-        setShowCreateMenu(prev => !prev);
-    }, []);
+    useEffect(() => {
+        // If user logs out while on "Your Feed", switch back
+        if (!isLoggedIn && activeTab === 'Your Feed') {
+            setActiveTab('Popular Posts');
+            return;
+        }
+        fetchPosts(true);
+    }, [fetchPosts, activeTab, sort, isLoggedIn]);
 
-    const closeCreateMenu = useCallback(() => {
-        setShowCreateMenu(false);
-    }, []);
 
-    // Memoized posts for rendering
-    const postsToRender = useMemo(() => {
-        if (!feedData?.pages) return [];
-        return feedData.pages.flatMap(page => page.posts || []);
-    }, [feedData]);
+    // --- HANDLERS ---
 
-    // Loading state
-    if (isLoading) return <Loader />;
+    const handleNavChange = (route) => setActiveTab(route);
+    const toggleCreateMenu = () => setShowCreateMenu(prev => !prev);
 
     return (
-        <div className="max-w-4xl mx-auto p-4">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {isLoggedIn ? 'Your Feed' : 'Popular Posts'}
-                </h1>
-                
-                <div className="flex items-center gap-4">
-                    {/* Sort Options */}
-                    <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 rounded-full p-1">
-                        {['hot', 'new', 'top'].map((sortOption) => (
-                            <button
-                                key={sortOption}
-                                onClick={() => handleSortChange(sortOption)}
-                                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                                    sort === sortOption 
-                                        ? 'bg-white dark:bg-gray-700 text-orange-500 shadow-sm' 
-                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                                }`}
-                            >
-                                {sortOption === 'hot' && '🔥 Hot'}
-                                {sortOption === 'new' && '🆕 New'}
-                                {sortOption === 'top' && '⭐ Top'}
-                            </button>
-                        ))}
+        <div className="max-w-6xl mx-auto flex gap-8 justify-center p-4">
+            
+            {/* MAIN FEED COLUMN */}
+            <div className="w-full md:max-w-2xl">
+                {/* Header & Controls */}
+                <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <InPageNavigation
+                        routes={['Popular Posts', 'Your Feed']}
+                        defaultHidden={!isLoggedIn ? ['Your Feed'] : []}
+                        defaultActiveIndex={activeTab === 'Your Feed' ? 1 : 0}
+                        onRouteChange={handleNavChange}
+                    />
+                    
+                    <div className="flex items-center gap-2">
+                        {/* Sort Dropdown/Buttons */}
+                        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                            {['hot', 'new', 'top'].map(opt => (
+                                <button
+                                    key={opt}
+                                    onClick={() => setSort(opt)}
+                                    className={`px-3 py-1 text-sm rounded-md capitalize transition-all ${
+                                        sort === opt 
+                                        ? 'bg-white dark:bg-gray-700 text-orange-500 shadow-sm font-bold' 
+                                        : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                                    }`}
+                                >
+                                    {opt}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Create Button (Mobile/Desktop) */}
+                        {isLoggedIn && (
+                            <div className="relative z-20">
+                                <button 
+                                    onClick={toggleCreateMenu}
+                                    className="bg-orange-500 hover:bg-orange-600 text-white p-2 rounded-full shadow-lg transition-transform active:scale-95"
+                                >
+                                    <i className="fi fi-rr-plus text-xl block"></i>
+                                </button>
+                                <AnimatePresence>
+                                    {showCreateMenu && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                                        >
+                                            <Link to="/readit/create-post" className="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
+                                                <i className="fi fi-rr-edit mr-2 text-blue-500"></i> Create Post
+                                            </Link>
+                                            <Link to="/readit/create-community" className="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm border-t border-gray-100 dark:border-gray-700">
+                                                <i className="fi fi-rr-users mr-2 text-green-500"></i> Create Community
+                                            </Link>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        )}
                     </div>
+                </div>
 
-                    {/* Create Button for logged-in users */}
-                    {isLoggedIn && (
-                        <div className="relative">
-                            <button
-                                onClick={toggleCreateMenu}
-                                onBlur={closeCreateMenu}
-                                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-medium flex items-center gap-2 transition-colors shadow-lg"
-                            >
-                                <i className="fi fi-rr-plus"></i>
-                                Create
-                            </button>
-
-                            <AnimatePresence>
-                                {showCreateMenu && (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                        className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50"
-                                    >
-                                        <Link
-                                            to="/readit/create-community"
-                                            className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg transition-colors"
-                                            onClick={closeCreateMenu}
-                                        >
-                                            <i className="fi fi-rr-users text-purple-500"></i>
-                                            Create Community
-                                        </Link>
-                                        <Link
-                                            to="/readit/create-post"
-                                            className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-b-lg transition-colors"
-                                            onClick={closeCreateMenu}
-                                        >
-                                            <i className="fi fi-rr-edit text-blue-500"></i>
-                                            Create Post
-                                        </Link>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                {/* POST LIST */}
+                <div className="min-h-[50vh]">
+                    {isLoading ? (
+                        <>
+                            <PostCardSkeleton />
+                            <PostCardSkeleton />
+                        </>
+                    ) : posts.length > 0 ? (
+                        <>
+                            {posts.map((post) => (
+                                <ReaditPostCard key={post._id} post={post} />
+                            ))}
+                            
+                            {/* Load More */}
+                            {hasMore.current && (
+                                <button 
+                                    onClick={() => fetchPosts(false)}
+                                    disabled={isFetchingMore}
+                                    className="w-full py-3 mt-4 text-blue-500 font-medium hover:bg-blue-50 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                                >
+                                    {isFetchingMore ? <Loader /> : "Load More Posts"}
+                                </button>
+                            )}
+                        </>
+                    ) : (
+                        <div className="text-center py-10 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                            <i className="fi fi-rr-confetti text-4xl text-gray-400 mb-3 block"></i>
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">No posts yet</h3>
+                            <p className="text-gray-500 text-sm">Be the first to share something!</p>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Welcome message for non-logged-in users */}
-            {!isLoggedIn && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-6"
-                >
-                    <div className="flex items-start gap-4">
-                        <div className="bg-blue-100 dark:bg-blue-800 p-3 rounded-lg">
-                            <i className="fi fi-rr-globe text-blue-600 dark:text-blue-300 text-xl"></i>
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-blue-800 dark:text-blue-200 mb-2">
-                                Welcome to Readit!
-                            </h2>
-                            <p className="text-blue-700 dark:text-blue-300 mb-3">
-                                Join communities, share posts, and connect with like-minded people.
+            {/* SIDEBAR (Desktop Only) */}
+            <div className="hidden md:block w-80 shrink-0">
+                <div className="sticky top-24 space-y-6">
+                    
+                    {/* Welcome Widget */}
+                    {!isLoggedIn && (
+                        <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-800 dark:to-gray-800 border border-orange-100 dark:border-gray-700 p-5 rounded-xl">
+                            <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+                                <i className="fi fi-rr-alien text-orange-500"></i> New to Readit?
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                                Sign up to subscribe to communities and customize your feed.
                             </p>
-                            {popularCommunities && popularCommunities.length > 0 && (
-                                <p className="text-sm text-blue-600 dark:text-blue-400">
-                                    Popular communities: {popularCommunities.slice(0, 3).map(c => `c/${c.name}`).join(', ')}
-                                </p>
-                            )}
+                            <Link to="/signup" className="btn-dark w-full block text-center py-2 rounded-lg">
+                                Join Now
+                            </Link>
+                        </div>
+                    )}
+
+                    {/* Popular Communities Widget */}
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                            <h3 className="font-bold text-sm uppercase tracking-wider text-gray-500">Popular Communities</h3>
+                        </div>
+                        <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                            {popularCommunities.slice(0, 5).map((comm, i) => (
+                                <Link 
+                                    key={comm._id} 
+                                    to={`/readit/c/${comm.name}`}
+                                    className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                >
+                                    <span className="font-bold text-gray-400 w-4 text-center">{i+1}</span>
+                                    <img src={comm.icon || '/default-community.png'} alt={comm.name} className="w-8 h-8 rounded-full bg-gray-200 object-cover" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-sm truncate text-gray-900 dark:text-white">c/{comm.name}</p>
+                                        <p className="text-xs text-gray-500">{comm.memberCount} members</p>
+                                    </div>
+                                </Link>
+                            ))}
                         </div>
                     </div>
-                </motion.div>
-            )}
 
-            {/* Posts Feed */}
-            <div className="space-y-4">
-                {postsToRender.map((post, index) => (
-                    <motion.div
-                        key={post._id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: Math.min(index * 0.05, 0.5) }}
-                    >
-                        <ReaditPostCard post={post} />
-                    </motion.div>
-                ))}
-                
-                {/* Empty State */}
-                {postsToRender.length === 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-center py-12"
-                    >
-                        <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-8 max-w-md mx-auto">
-                            <i className="fi fi-rr-post text-4xl text-gray-400 dark:text-gray-600 mb-4"></i>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                No posts found
-                            </h3>
-                            <p className="text-gray-600 dark:text-gray-400 mb-4">
-                                {!isLoggedIn 
-                                    ? "Join some communities to see posts in your feed!" 
-                                    : "Be the first to post in your communities!"
-                                }
-                            </p>
-                            {isLoggedIn && (
-                                <Link
-                                    to="/readit/create-post"
-                                    className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full font-medium inline-flex items-center gap-2 transition-colors"
-                                >
-                                    <i className="fi fi-rr-edit"></i>
-                                    Create Post
-                                </Link>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
+                    {/* Footer Links */}
+                    <div className="text-xs text-gray-400 px-2 flex flex-wrap gap-x-4 gap-y-2">
+                        <Link to="#" className="hover:underline">Privacy Policy</Link>
+                        <Link to="#" className="hover:underline">User Agreement</Link>
+                        <span>© 2025 Readit</span>
+                    </div>
+                </div>
             </div>
 
-            {/* Load More Button */}
-            {hasNextPage && (
-                <div className="flex justify-center mt-8">
-                    <button
-                        onClick={() => fetchNextPage()}
-                        disabled={isFetchingNextPage}
-                        className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-full font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
-                    >
-                        {isFetchingNextPage ? (
-                            <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700 dark:border-gray-300"></div>
-                                Loading...
-                            </>
-                        ) : (
-                            <>
-                                <i className="fi fi-rr-refresh"></i>
-                                Load More Posts
-                            </>
-                        )}
-                    </button>
-                </div>
-            )}
-
-            {/* Popular Communities Section for non-logged-in users */}
-            {!isLoggedIn && popularCommunities && popularCommunities.length > 0 && (
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="mt-12"
-                >
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Popular Communities</h2>
-                        <Link 
-                            to="/signin"
-                            className="text-orange-500 hover:text-orange-600 font-medium text-sm flex items-center gap-1"
-                        >
-                            Join to participate
-                            <i className="fi fi-rr-arrow-right text-xs"></i>
-                        </Link>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {popularCommunities.slice(0, 6).map((community, index) => (
-                            <motion.div
-                                key={community._id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                                className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all hover:border-orange-200 dark:hover:border-orange-800 group"
-                            >
-                                <Link to={`/readit/c/${community.name}`} className="block">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="relative">
-                                            <img 
-                                                src={community.icon || '/default-community.png'} 
-                                                alt={community.name}
-                                                className="w-12 h-12 rounded-full border-2 border-gray-200 dark:border-gray-700 group-hover:border-orange-300 transition-colors"
-                                                loading="lazy"
-                                            />
-                                            <div className="absolute -bottom-1 -right-1 bg-green-500 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800"></div>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-bold text-gray-900 dark:text-white truncate group-hover:text-orange-500 transition-colors">
-                                                c/{community.name}
-                                            </h3>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">{community.memberCount} members</p>
-                                        </div>
-                                    </div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{community.description}</p>
-                                </Link>
-                            </motion.div>
-                        ))}
-                    </div>
-                </motion.div>
-            )}
         </div>
     );
 };

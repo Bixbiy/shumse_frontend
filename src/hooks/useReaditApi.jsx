@@ -1,287 +1,304 @@
-// src/hooks/useReaditApi.js - UPDATED VERSION
-import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useContext } from 'react';
+/*
+ * MODIFIED FILE (Complete Rewrite - No TanStack Query)
+ * Path: src/hooks/useReaditApi.jsx
+ */
+import { useState, useEffect, useContext } from 'react';
 import { userContext } from '../App';
+import api from '../common/api';
 import { toast } from 'react-hot-toast';
-import api from '../common/api'; // <-- Use your working axios instance
 
-// === API Fetching Hooks ===
+// ==========================================
+// 1. DATA FETCHING HOOKS
+// ==========================================
 
-// 1. Fetches the user's personalized home feed (requires auth)
+// --- Private Home Feed ---
 export const useHomeFeed = (sort) => {
     const { userAuth } = useContext(userContext);
-    
-    return useInfiniteQuery({
-        queryKey: ['readitFeed', sort],
-        queryFn: ({ pageParam = 1 }) => 
-            api.get(`/readit/posts/feed?sort=${sort}&page=${pageParam}&limit=10`)
-                .then(res => res.data),
-        getNextPageParam: (lastPage) => {
-            return lastPage.hasMore ? lastPage.page + 1 : undefined;
-        },
-        enabled: !!userAuth?.access_token // Only enable if user is logged in
-    });
-};
+    const [posts, setPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
 
-// 2. Fetches a specific community's details (public)
-export const useCommunity = (communityName) => {
-    return useQuery({
-        queryKey: ['community', communityName],
-        queryFn: () => api.get(`/readit/c/${communityName}`).then(res => res.data),
-        staleTime: 1000 * 60 * 5 // Cache community data for 5 minutes
-    });
-};
+    // Reset when sort changes
+    useEffect(() => {
+        setPosts([]);
+        setPage(1);
+        setHasMore(true);
+        setLoading(true);
+    }, [sort]);
 
-// 3. Fetches a specific community's posts (paginated, public)
-export const useCommunityPosts = (communityName, sort) => {
-    return useInfiniteQuery({
-        queryKey: ['communityPosts', communityName, sort],
-        queryFn: ({ pageParam = 1 }) => 
-            api.get(`/readit/c/${communityName}/posts?sort=${sort}&page=${pageParam}&limit=10`)
-                .then(res => res.data),
-        getNextPageParam: (lastPage) => {
-            return lastPage.hasMore ? lastPage.page + 1 : undefined;
-        },
-        enabled: !!communityName // Only run if communityName is available
-    });
-};
-
-// 4. Fetches a single post's details (public)
-export const useReaditPost = (postId) => {
-    return useQuery({
-        queryKey: ['readitPost', postId],
-        queryFn: () => api.get(`/readit/posts/${postId}`).then(res => res.data),
-        staleTime: 1000 * 60 * 5,
-        enabled: !!postId
-    });
-};
-
-// 5. Fetches public feed (fixed endpoint)
-export const usePublicFeed = (sort) => {
-    return useInfiniteQuery({
-        queryKey: ['publicFeed', sort],
-        queryFn: ({ pageParam = 1 }) => 
-            api.get(`/readit/posts/public?sort=${sort}&page=${pageParam}&limit=10`)
-                .then(res => res.data),
-        getNextPageParam: (lastPage) => {
-            return lastPage.hasMore ? lastPage.page + 1 : undefined;
+    useEffect(() => {
+        if (!userAuth.access_token) {
+            setLoading(false);
+            return; 
         }
-    });
-};
 
-// 6. Fetches popular communities (public)
-export const usePopularCommunities = () => {
-    return useQuery({
-        queryKey: ['popularCommunities'],
-        queryFn: () => api.get(`/readit/communities/popular`).then(res => res.data),
-        staleTime: 1000 * 60 * 30 // Cache for 30 minutes
-    });
-};
-
-// ===================================
-// === Comment Fetching Hooks ===
-// ===================================
-
-/**
- * 7. Fetches TOP-LEVEL comments for a post (paginated, public)
- */
-export const usePostComments = (postId, sort) => {
-    return useInfiniteQuery({
-        queryKey: ['readitComments', postId, sort],
-        queryFn: ({ pageParam = 1 }) => 
-            api.get(`/readit/posts/${postId}/comments?sort=${sort}&page=${pageParam}&limit=10`)
-                .then(res => res.data),
-        getNextPageParam: (lastPage) => {
-            return lastPage.hasMore ? lastPage.page + 1 : undefined;
-        },
-        enabled: !!postId
-    });
-};
-
-/**
- * 8. Fetches replies for a SINGLE comment (paginated, public)
- */
-export const useCommentReplies = (commentId) => {
-    return useInfiniteQuery({
-        queryKey: ['readitCommentReplies', commentId],
-        queryFn: ({ pageParam = 1 }) =>
-            api.get(`/readit/comments/${commentId}/replies?page=${pageParam}&limit=5`)
-                .then(res => res.data),
-        getNextPageParam: (lastPage) => {
-            return lastPage.hasMore ? lastPage.page + 1 : undefined;
-        },
-        enabled: false // Only fetch when explicitly enabled by the component
-    });
-};
-
-// === API Mutation Hooks (all require auth) ===
-
-/**
- * Hook for voting on a Post
- */
-export const useVotePost = () => {
-    const queryClient = useQueryClient();
-    const { userAuth } = useContext(userContext);
-
-    return useMutation({
-        mutationFn: ({ postId, voteType }) => 
-            api.put(`/readit/posts/${postId}/vote`, { voteType }),
-        
-        onSuccess: (data, variables) => {
-            const { postId } = variables;
-            
-            // Update the specific post cache
-            queryClient.setQueryData(['readitPost', postId], (oldData) => {
-                if (!oldData) return oldData;
-                return { 
-                    ...oldData, 
-                    votes: data.data.votes,
-                    upvotedBy: data.data.upvotedBy || oldData.upvotedBy,
-                    downvotedBy: data.data.downvotedBy || oldData.downvotedBy
-                };
-            });
-
-            // Invalidate relevant queries
-            queryClient.invalidateQueries({ queryKey: ['readitFeed'] });
-            queryClient.invalidateQueries({ queryKey: ['communityPosts'] });
-            queryClient.invalidateQueries({ queryKey: ['publicFeed'] });
-        },
-        onError: (err) => {
-            console.error("Vote error:", err);
-            toast.error(err.response?.data?.error || "Vote failed. Please try again.");
-        }
-    });
-};
-
-/**
- * Hook for voting on a Comment
- */
-export const useVoteComment = () => {
-    const queryClient = useQueryClient();
-    const { userAuth } = useContext(userContext);
-
-    return useMutation({
-        mutationFn: ({ commentId, voteType }) =>
-            api.put(`/readit/comments/${commentId}/vote`, { voteType }),
-        
-        onSuccess: (data, variables) => {
-            queryClient.invalidateQueries({ queryKey: ['readitComments'] });
-            queryClient.invalidateQueries({ queryKey: ['readitCommentReplies'] });
-        },
-        onError: (err) => {
-            console.error("Comment vote error:", err);
-            toast.error(err.response?.data?.error || "Vote failed. Please try again.");
-        }
-    });
-};
-
-/**
- * Hook for creating a new Comment
- */
-export const useCreateReaditComment = () => {
-    const queryClient = useQueryClient();
-    const { userAuth } = useContext(userContext);
-
-    return useMutation({
-        mutationFn: ({ postId, content, parent = null }) =>
-            api.post(`/readit/posts/${postId}/comments`, { content, parent }),
-        
-        onSuccess: (data, variables) => {
-            const { postId, parent } = variables;
-            
-            queryClient.invalidateQueries({ queryKey: ['readitComments', postId] });
-            if (parent) {
-                queryClient.invalidateQueries({ queryKey: ['readitCommentReplies', parent] });
+        const fetchData = async () => {
+            try {
+                const { data } = await api.get(`/readit/posts/feed?sort=${sort}&page=${page}&limit=10`);
+                
+                if (page === 1) {
+                    setPosts(data.posts);
+                } else {
+                    setPosts(prev => [...prev, ...data.posts]);
+                }
+                
+                setHasMore(data.hasMore);
+            } catch (err) {
+                console.error(err);
+                setError(err);
+            } finally {
+                setLoading(false);
             }
-            queryClient.invalidateQueries({ queryKey: ['readitPost', postId] });
-            
-            toast.success("Comment posted successfully!");
-        },
-        onError: (err) => {
-            toast.error(err.response?.data?.error || "Failed to post comment.");
-        }
+        };
+
+        fetchData();
+    }, [sort, page, userAuth.access_token]);
+
+    const fetchNextPage = () => {
+        if (hasMore && !loading) setPage(prev => prev + 1);
+    };
+
+    return { posts, loading, error, hasMore, fetchNextPage, setPosts };
+};
+
+// --- Public Feed ---
+export const usePublicFeed = (sort) => {
+    const [posts, setPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+
+    useEffect(() => {
+        setPosts([]);
+        setPage(1);
+        setHasMore(true);
+        setLoading(true);
+    }, [sort]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const { data } = await api.get(`/readit/posts/public?sort=${sort}&page=${page}&limit=10`);
+                if (page === 1) setPosts(data.posts);
+                else setPosts(prev => [...prev, ...data.posts]);
+                setHasMore(data.hasMore);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [sort, page]);
+
+    const fetchNextPage = () => {
+        if (hasMore && !loading) setPage(prev => prev + 1);
+    };
+
+    return { posts, loading, hasMore, fetchNextPage, setPosts };
+};
+
+// --- Community Posts ---
+export const useCommunityPosts = (communityName, sort) => {
+    const [posts, setPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+
+    useEffect(() => {
+        setPosts([]);
+        setPage(1);
+        setHasMore(true);
+        setLoading(true);
+    }, [communityName, sort]);
+
+    useEffect(() => {
+        if (!communityName) return;
+        const fetchData = async () => {
+            try {
+                const { data } = await api.get(`/readit/c/${communityName}/posts?sort=${sort}&page=${page}&limit=10`);
+                if (page === 1) setPosts(data.posts);
+                else setPosts(prev => [...prev, ...data.posts]);
+                setHasMore(data.hasMore);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [communityName, sort, page]);
+
+    const fetchNextPage = () => {
+        if (hasMore && !loading) setPage(prev => prev + 1);
+    };
+
+    return { posts, loading, hasMore, fetchNextPage, setPosts };
+};
+
+// --- Single Community Info ---
+export const useCommunity = (communityName) => {
+    const [community, setCommunity] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (!communityName) return;
+        const fetchCommunity = async () => {
+            setLoading(true);
+            try {
+                const { data } = await api.get(`/readit/c/${communityName}`);
+                setCommunity(data);
+            } catch (err) {
+                setError(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCommunity();
+    }, [communityName]);
+
+    return { community, loading, error };
+};
+
+// --- Single Post Info ---
+export const useReaditPost = (postId) => {
+    const [post, setPost] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (!postId) return;
+        const fetchPost = async () => {
+            setLoading(true);
+            try {
+                const { data } = await api.get(`/readit/posts/${postId}`);
+                setPost(data);
+            } catch (err) {
+                setError(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchPost();
+    }, [postId]);
+
+    return { post, loading, error, setPost };
+};
+
+// --- Post Comments ---
+export const usePostComments = (postId, sort) => {
+    const [comments, setComments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+
+    useEffect(() => {
+        setComments([]);
+        setPage(1);
+        setLoading(true);
+    }, [postId, sort]);
+
+    useEffect(() => {
+        if (!postId) return;
+        const fetchComments = async () => {
+            try {
+                const { data } = await api.get(`/readit/posts/${postId}/comments?sort=${sort}&page=${page}&limit=15`);
+                if (page === 1) setComments(data.comments);
+                else setComments(prev => [...prev, ...data.comments]);
+                setHasMore(data.hasMore);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchComments();
+    }, [postId, sort, page]);
+
+    const fetchNextPage = () => {
+        if (hasMore && !loading) setPage(prev => prev + 1);
+    };
+
+    return { comments, loading, hasMore, fetchNextPage, setComments };
+};
+
+// --- Comment Replies ---
+export const useCommentReplies = (commentId) => {
+    const [replies, setReplies] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+
+    useEffect(() => {
+        if (!commentId) return;
+        const fetchReplies = async () => {
+            try {
+                const { data } = await api.get(`/readit/comments/${commentId}/replies?page=${page}&limit=5`);
+                if (page === 1) setReplies(data.replies);
+                else setReplies(prev => [...prev, ...data.replies]);
+                setHasMore(data.hasMore);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchReplies();
+    }, [commentId, page]);
+
+    const fetchNextPage = () => {
+        if (hasMore && !loading) setPage(prev => prev + 1);
+    };
+
+    return { replies, loading, hasMore, fetchNextPage, setReplies };
+};
+
+// --- Popular Communities ---
+export const usePopularCommunities = () => {
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        api.get('/readit/communities/popular')
+            .then(res => setData(res.data))
+            .catch(err => console.error(err))
+            .finally(() => setLoading(false));
+    }, []);
+
+    return { data, loading };
+};
+
+
+// ==========================================
+// 2. ASYNC MUTATION FUNCTIONS (Called directly by components)
+// ==========================================
+
+export const createReaditPost = async (postData) => {
+    const { communityName, title, content, postType, url, image, flair } = postData;
+    return await api.post(`/readit/c/${communityName}/posts`, {
+        title, content, postType, url, image, flair
     });
 };
 
-/**
- * Hook for creating a new Post
- */
-export const useCreateReaditPost = () => {
-    const queryClient = useQueryClient();
-    const { userAuth } = useContext(userContext);
-
-    return useMutation({
-        mutationFn: ({ communityName, title, content, postType = 'text', url, image, flair }) =>
-            api.post(`/readit/c/${communityName}/posts`, {
-                title,
-                content,
-                postType,
-                url,
-                image,
-                flair
-            }),
-        
-        onSuccess: (data, variables) => {
-            queryClient.invalidateQueries({ queryKey: ['communityPosts', variables.communityName] });
-            queryClient.invalidateQueries({ queryKey: ['readitFeed'] });
-            queryClient.invalidateQueries({ queryKey: ['publicFeed'] });
-            
-            toast.success("Post created successfully!");
-            
-            return data.data;
-        },
-        onError: (err) => {
-            toast.error(err.response?.data?.error || "Failed to create post.");
-        }
-    });
+export const createReaditCommunity = async (data) => {
+    return await api.post(`/readit/communities`, data);
 };
 
-/**
- * Hook for creating a new Community
- */
-export const useCreateReaditCommunity = () => {
-    const queryClient = useQueryClient();
-    const { userAuth } = useContext(userContext);
-
-    return useMutation({
-        mutationFn: ({ name, title, description, icon }) =>
-            api.post(`/readit/communities`, {
-                name,
-                title,
-                description,
-                icon
-            }),
-        
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: ['popularCommunities'] });
-            toast.success("Community created successfully!");
-            return data.data;
-        },
-        onError: (err) => {
-            toast.error(err.response?.data?.error || "Failed to create community.");
-        }
-    });
+export const joinCommunity = async (communityName) => {
+    return await api.post(`/readit/c/${communityName}/join`);
 };
 
-/**
- * Hook for joining/leaving a community
- */
-export const useJoinCommunity = () => {
-    const queryClient = useQueryClient();
-    const { userAuth } = useContext(userContext);
+export const votePost = async (postId, voteType) => {
+    return await api.put(`/readit/posts/${postId}/vote`, { voteType });
+};
 
-    return useMutation({
-        mutationFn: (communityName) =>
-            api.post(`/readit/c/${communityName}/join`, {}),
-        
-        onSuccess: (data, variables) => {
-            queryClient.invalidateQueries({ queryKey: ['community', variables] });
-            queryClient.invalidateQueries({ queryKey: ['popularCommunities'] });
-            
-            toast.success("Successfully joined community!");
-        },
-        onError: (err) => {
-            toast.error(err.response?.data?.error || "Failed to join community.");
-        }
-    });
+export const voteComment = async (commentId, voteType) => {
+    return await api.put(`/readit/comments/${commentId}/vote`, { voteType });
+};
+
+export const createComment = async (postId, content, parent = null) => {
+    return await api.post(`/readit/posts/${postId}/comments`, { content, parent });
 };

@@ -1,83 +1,158 @@
 /*
- * NEW FILE
- * Path: src/components/readit/ReaditCommentSection.jsx
+ * PATH: src/components/readit/ReaditCommentSection.jsx
  */
-import React, { useState } from 'react';
-import { usePostComments, useCreateReaditComment } from '../../hooks/useReaditApi';
+import React, { useState, useEffect, useCallback, useRef, useContext } from 'react';
+import axiosInstance from '../../common/api';
 import ReaditCommentCard from './ReaditCommentCard';
 import Loader from '../loader.component';
 import toast from 'react-hot-toast';
+import { userContext } from '../../App';
 
-// A simple, reusable comment field
-const ReaditCommentField = ({ postId, parentId = null, onCommentPosted }) => {
+// --- INLINE MAIN COMMENT FIELD ---
+const ReaditMainCommentField = ({ postId, onCommentPosted }) => {
     const [comment, setComment] = useState("");
-    const { mutate: postComment, isLoading } = useCreateReaditComment();
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = () => {
-        if (!comment.trim()) {
-            return toast.error("Comment can't be empty");
+    const handleSubmit = async () => {
+        if (!comment.trim()) return toast.error("Comment can't be empty");
+        
+        setIsSubmitting(true);
+        try {
+            await axiosInstance.post(`/readit/posts/${postId}/comments`, { content: comment });
+            setComment("");
+            if (onCommentPosted) onCommentPosted();
+        } catch (err) {
+            console.error("Failed to post comment:", err);
+            toast.error(err.response?.data?.error || "Failed to post comment.");
+        } finally {
+            setIsSubmitting(false);
         }
-        postComment({ postId, content: comment, parent: parentId }, {
-            onSuccess: () => {
-                setComment(""); // Clear the box
-                if(onCommentPosted) onCommentPosted();
-            }
-        });
     };
 
     return (
-        <div className="my-4">
+        <div className="mb-6">
             <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder={parentId ? "Write a reply..." : "What are your thoughts?"}
-                className="input-box h-24"
+                placeholder="What are your thoughts?"
+                className="input-box h-28 resize-none p-4"
             />
             <div className="flex justify-end mt-2">
-                <button onClick={handleSubmit} disabled={isLoading} className="btn-dark px-6">
-                    {isLoading ? "Posting..." : "Reply"}
+                <button onClick={handleSubmit} disabled={isSubmitting} className="btn-dark px-6 py-2">
+                    {isSubmitting ? "Posting..." : "Comment"}
                 </button>
             </div>
         </div>
     );
 };
 
-
-// The main comment section component
-const ReaditCommentSection = ({ post }) => {
+// --- MAIN SECTION ---
+const ReaditCommentSection = ({ post, onCommentPosted }) => {
+    const { userAuth } = useContext(userContext);
     const [sort, setSort] = useState('top');
-    const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = usePostComments(post._id, sort);
+    
+    const [comments, setComments] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+    
+    const page = useRef(1);
+    const hasMore = useRef(true);
+
+    const fetchComments = useCallback(async (isReset = false) => {
+        if (isReset) {
+            page.current = 1;
+            hasMore.current = true;
+            setComments([]);
+        }
+
+        setIsLoading(true);
+        try {
+            const { data } = await axiosInstance.get(`/readit/posts/${post._id}/comments?sort=${sort}&page=${page.current}&limit=10`);
+            
+            if (isReset) {
+                setComments(data.comments || []);
+            } else {
+                setComments(prev => [...prev, ...(data.comments || [])]);
+            }
+            
+            page.current += 1; // Prepare for next page
+            hasMore.current = data.hasMore;
+        } catch (err) {
+            console.error("Failed to fetch comments:", err);
+            toast.error("Failed to load comments.");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [post._id, sort]);
+
+    // Initial Fetch
+    useEffect(() => {
+        fetchComments(true);
+    }, [fetchComments]);
+
+    const fetchMoreComments = async () => {
+        if (isFetchingMore || !hasMore.current) return;
+
+        setIsFetchingMore(true);
+        try {
+            const { data } = await axiosInstance.get(`/readit/posts/${post._id}/comments?sort=${sort}&page=${page.current}&limit=10`);
+            setComments(prev => [...prev, ...(data.comments || [])]);
+            page.current += 1;
+            hasMore.current = data.hasMore;
+        } catch (err) {
+            console.error("Failed to fetch more comments:", err);
+        } finally {
+            setIsFetchingMore(false);
+        }
+    };
+
+    const handleCommentPosted = () => {
+        fetchComments(true); // Refresh list
+        if (onCommentPosted) onCommentPosted(); // Update parent post counts
+    };
 
     return (
-        <div id="comments" className="mt-6 bg-white dark:bg-grey-dark rounded-lg shadow-md p-4">
-            <h2 className="text-xl font-bold mb-4">{post.commentCount} Comments</h2>
+        <div id="comments" className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-black dark:text-white">
+                    {post.commentCount} Comments
+                </h2>
+                <div className="flex gap-2">
+                    <button onClick={() => setSort('top')} className={`text-xs px-3 py-1 rounded-full ${sort === 'top' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>Top</button>
+                    <button onClick={() => setSort('new')} className={`text-xs px-3 py-1 rounded-full ${sort === 'new' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>New</button>
+                </div>
+            </div>
             
-            <ReaditCommentField postId={post._id} />
+            {userAuth.access_token ? (
+                <ReaditMainCommentField postId={post._id} onCommentPosted={handleCommentPosted} />
+            ) : (
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg text-center mb-6">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Log in to join the discussion</p>
+                </div>
+            )}
 
-            {/* TODO: Add Sort (Top, New) buttons here */}
+            <div className="space-y-4">
+                {isLoading && page.current === 1 ? (
+                    <Loader />
+                ) : comments.length > 0 ? (
+                    comments.map(comment => (
+                        <ReaditCommentCard 
+                            comment={comment} 
+                            postId={post._id} 
+                            key={comment._id} 
+                        />
+                    ))
+                ) : (
+                    <p className="text-center text-gray-500 py-8">No comments yet. Be the first!</p>
+                )}
 
-            <div className="mt-6">
-                {isLoading && <Loader />}
-                
-                {data?.pages.map((page, i) => (
-                    <React.Fragment key={i}>
-                        {page.comments.map(comment => (
-                            <ReaditCommentCard 
-                                comment={comment} 
-                                postId={post._id} 
-                                key={comment._id} 
-                            />
-                        ))}
-                    </React.Fragment>
-                ))}
-
-                {hasNextPage && (
+                {hasMore.current && !isLoading && (
                     <button 
-                        onClick={() => fetchNextPage()} 
-                        disabled={isFetchingNextPage}
-                        className="btn-light w-full mt-4"
+                        onClick={fetchMoreComments} 
+                        disabled={isFetchingMore}
+                        className="w-full py-2 text-sm font-medium text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
-                        {isFetchingNextPage ? 'Loading...' : 'Load More Comments'}
+                        {isFetchingMore ? 'Loading...' : 'Load More Comments'}
                     </button>
                 )}
             </div>
