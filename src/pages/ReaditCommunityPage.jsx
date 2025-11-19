@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef, useCallback, useContext } from 'rea
 import { useParams, Link } from 'react-router-dom';
 import { userContext } from '../App';
 import axiosInstance from '../common/api';
+import Loader from '../components/loader.component';
 import ReaditPostCard from '../components/readit/ReaditPostCard';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
@@ -76,6 +77,7 @@ const ReaditCommunityPage = () => {
         setCommunityError(null);
         try {
             const { data } = await axiosInstance.get(`/readit/c/${communityName}`);
+            console.log("Community Data:", data);
             setCommunity(data);
             
             // Check if user is already a member

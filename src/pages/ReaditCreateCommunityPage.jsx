@@ -41,6 +41,7 @@ const ReaditCreateCommunityPage = () => {
         try {
             const result = await UploadImage(file); 
             setFormData(prev => ({ ...prev, icon: result })); // Assuming UploadImage returns the URL string
+             
             toast.success('Icon uploaded!');
         } catch (error) {
             console.error(error);

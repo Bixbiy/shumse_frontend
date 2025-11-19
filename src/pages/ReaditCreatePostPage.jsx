@@ -73,7 +73,7 @@ const ReaditCreatePostPage = () => {
             const result = await UploadImage(file); 
             // Ensure we handle the result format correctly (URL string or object)
             const url = typeof result === 'string' ? result : result.url;
-            
+            console.log("Uploaded image URL:", url);
             setFormData(prev => ({ ...prev, image: url }));
             toast.success('Image uploaded successfully!');
         } catch (error) {

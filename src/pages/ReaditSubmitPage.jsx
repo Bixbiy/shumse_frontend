@@ -1,81 +1,63 @@
 /*
- * NEW FILE
- * Path: src/pages/ReaditSubmitPage.jsx
+ * FIXED FILE: src/pages/ReaditSubmitPage.jsx
  */
-import React, { useState, useContext, useRef, useEffect } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { UserContext } from '../App';
+import { userContext } from '../App';
 import { Helmet } from 'react-helmet-async';
-import { useQueryClient } from '@tanstack/react-query';
 import InPageNavigation from '../components/inpage-navigation.component';
-import { uploadImage } from '../common/api'; // Using your existing uploader
 import toast from 'react-hot-toast';
-import axios from 'axios';
-
-const API_DOMAIN = import.meta.env.VITE_SERVER_DOMAIN + "/api/v1/readit";
-
-// New Mutation Hook (add this to src/hooks/useReaditApi.js)
-// For brevity, I'll define it here, but it should be moved to your hook file.
-const useCreateReaditPost = () => {
-    const queryClient = useQueryClient();
-    const { userAuth } = useContext(UserContext);
-
-    return useMutation({
-        mutationFn: ({ communityName, postData }) =>
-            axios.post(`${API_DOMAIN}/c/${communityName}/posts`, postData, {
-                headers: { 'Authorization': `Bearer ${userAuth.access_token}` }
-            }),
-        onSuccess: (data, variables) => {
-            // Invalidate the post list for the community
-            queryClient.invalidateQueries({ queryKey: ['communityPosts', variables.communityName] });
-            toast.success("Post created!");
-        },
-        onError: (err) => {
-            toast.error(err.response?.data?.error || "Failed to create post.");
-        }
-    });
-};
-
+import { UploadImage } from '../common/aws';
+import Loader from '../components/loader.component';
+// Import the axios helper instead of defining a mutation hook
+import { createReaditPost } from '../hooks/useReaditApi';
 
 const ReaditSubmitPage = () => {
     const { communityName } = useParams();
     const navigate = useNavigate();
-    const { userAuth } = useContext(UserContext);
+    const { userAuth } = useContext(userContext);
 
     // Refs for nav component
     const navRef = useRef();
-    const navOffsetRef = useRef(0);
 
+    // State
     const [postType, setPostType] = useState('text');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [url, setUrl] = useState('');
     const [image, setImage] = useState('');
     
-    const { mutate: createPost, isLoading } = useCreateReaditPost();
+    // Local loading state (Replaces TanStack 'isLoading')
+    const [isLoading, setIsLoading] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
-    // Set the post type state when the tab changes
     const handleTabChange = (btn, i) => {
         setPostType(btn.innerText.toLowerCase());
-    }
+    };
 
     const handleImageUpload = async (e) => {
         const img = e.target.files[0];
         if (!img) return;
 
-        let loadingToast = toast.loading("Uploading image...");
+        setIsUploading(true);
+        const loadingToast = toast.loading("Uploading image...");
+        
         try {
-            const uploadedUrl = await uploadImage(img); //
-            setImage(uploadedUrl);
+            const uploadedUrl = await UploadImage(img);
+            // Ensure we handle if UploadImage returns object or string
+            const imageUrl = typeof uploadedUrl === 'object' ? uploadedUrl.url : uploadedUrl;
+            setImage(imageUrl);
             toast.success("Image uploaded!");
         } catch (err) {
+            console.error(err);
             toast.error("Image upload failed.");
         } finally {
             toast.dismiss(loadingToast);
+            setIsUploading(false);
         }
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!title.trim()) {
             return toast.error("A title is required.");
         }
@@ -86,7 +68,11 @@ const ReaditSubmitPage = () => {
             return toast.error("An image is required.");
         }
 
+        setIsLoading(true);
+
+        // Construct data object expected by createReaditPost
         const postData = {
+            communityName, // Important: Pass community name here
             title,
             postType,
             content: postType === 'text' ? content : undefined,
@@ -94,39 +80,59 @@ const ReaditSubmitPage = () => {
             image: postType === 'image' ? image : undefined,
         };
 
-        createPost({ communityName, postData }, {
-            onSuccess: (data) => {
-                // Navigate to the new post's page
-                navigate(`/readit/post/${data.data._id}`);
-            }
-        });
+        try {
+            const response = await createReaditPost(postData);
+            toast.success("Post created!");
+            // Redirect to the new post
+            navigate(`/readit/post/${response.data._id}`);
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.error || "Failed to create post.");
+        } finally {
+            setIsLoading(false);
+        }
     };
+
+    // Auth Guard
+    if (!userAuth?.access_token) {
+        return (
+            <div className="max-w-3xl mx-auto p-8 text-center">
+                <h2 className="text-xl font-bold text-dark-grey">You must be logged in to post.</h2>
+                <button onClick={() => navigate('/signin')} className="btn-dark mt-4">Sign In</button>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-3xl mx-auto p-4">
             <Helmet>
-                <title>Submit to c/{communityName}</title>
+                <title>Submit to c/{communityName} | Readit</title>
             </Helmet>
-            <h1 className="text-2xl font-bold mb-2">Create a Post</h1>
-            <p className="text-dark-grey mb-4">Posting to <span className="font-semibold">c/{communityName}</span></p>
+
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold mb-1">Create a Post</h1>
+                <p className="text-dark-grey">
+                    Posting to <span className="font-semibold text-black dark:text-white">c/{communityName}</span>
+                </p>
+            </div>
             
-            <div className="bg-white dark:bg-grey-dark rounded-lg shadow-md border border-grey dark:border-grey-dark">
+            <div className="bg-white dark:bg-grey-dark rounded-lg shadow-md border border-grey dark:border-grey-dark overflow-hidden">
                 <InPageNavigation
                     ref={navRef}
                     routes={['Text', 'Image', 'Link']}
-                    defaultIndex={0}
-                    onChange={handleTabChange}
-                >
-                    {/* The InPageNavigation component handles showing the active tab line */}
-                </InPageNavigation>
+                    defaultActiveIndex={0}
+                    defaultHidden={[]}
+                    onRouteChange={handleTabChange}
+                />
 
-                <div className="p-4">
+                <div className="p-6">
                     <input
                         type="text"
                         placeholder="Title"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className="input-box mb-4 text-2xl font-semibold"
+                        className="input-box mb-4 text-xl font-semibold placeholder:font-normal"
+                        maxLength={300}
                     />
 
                     {postType === 'text' && (
@@ -134,33 +140,65 @@ const ReaditSubmitPage = () => {
                             placeholder="What's on your mind? (Markdown supported)"
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
-                            className="input-box h-40"
+                            className="input-box h-64 resize-y font-mono text-sm leading-relaxed"
                         />
                     )}
                     
                     {postType === 'image' && (
-                        <div className="border border-dashed border-grey p-4 rounded-md text-center">
-                            <input type="file" id="upload-image-input" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                            <label htmlFor="upload-image-input" className="cursor-pointer text-blue hover:underline">
-                                {image ? "Change Image" : "Upload Image"}
+                        <div className="border-2 border-dashed border-grey dark:border-grey/30 bg-grey/5 p-8 rounded-lg text-center">
+                            <input 
+                                type="file" 
+                                id="upload-image-input" 
+                                accept="image/*" 
+                                onChange={handleImageUpload} 
+                                className="hidden" 
+                                disabled={isUploading}
+                            />
+                            <label 
+                                htmlFor="upload-image-input" 
+                                className="cursor-pointer inline-flex flex-col items-center gap-2"
+                            >
+                                <i className="fi fi-rr-picture text-4xl text-dark-grey"></i>
+                                <span className="text-blue font-medium hover:underline">
+                                    {image ? "Change Image" : "Upload Image"}
+                                </span>
                             </label>
-                            {image && <img src={image} alt="Post preview" className="w-full rounded-md mt-4" />}
+                            
+                            {image && (
+                                <div className="mt-4 relative inline-block">
+                                    <img src={image} alt="Post preview" className="max-h-64 rounded-md shadow-sm" />
+                                </div>
+                            )}
                         </div>
                     )}
                     
                     {postType === 'link' && (
-                        <input
-                            type="url"
-                            placeholder="https://your-link.com"
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
-                            className="input-box"
-                        />
+                        <div className="relative">
+                             <i className="fi fi-rr-link-alt absolute left-4 top-1/2 -translate-y-1/2 text-dark-grey"></i>
+                            <input
+                                type="url"
+                                placeholder="https://example.com"
+                                value={url}
+                                onChange={(e) => setUrl(e.target.value)}
+                                className="input-box pl-10 text-blue"
+                            />
+                        </div>
                     )}
 
-                    <div className="flex justify-end mt-4">
-                        <button onClick={handleSubmit} disabled={isLoading} className="btn-dark px-8">
-                            {isLoading ? 'Posting...' : 'Post'}
+                    <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-grey dark:border-grey/20">
+                        <button 
+                            onClick={() => navigate(-1)} 
+                            className="btn-light px-6"
+                            disabled={isLoading}
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            onClick={handleSubmit} 
+                            disabled={isLoading || isUploading} 
+                            className="btn-dark px-8 flex items-center gap-2"
+                        >
+                            {isLoading ? <Loader /> : "Post"}
                         </button>
                     </div>
                 </div>
