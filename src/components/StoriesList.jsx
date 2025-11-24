@@ -6,7 +6,7 @@ import Navbar from '../components/Navbar';
 import StoryCard from '../components/StoryCard';
 import AdCard from '../components/AdSection';
 import NoData from '../components/NoData';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 
 // Skeleton shimmer card
 const SkeletonCard = () => (

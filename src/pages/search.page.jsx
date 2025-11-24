@@ -6,7 +6,7 @@ import Loader from '../components/Loader';
 import PostCard from '../components/BlogPost';
 import StoryCard from '../components/StoryCard';
 import UserCard from '../components/UserCard';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import NoData from '../components/NoData';
 
 const tabs = [
