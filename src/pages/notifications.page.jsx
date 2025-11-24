@@ -7,7 +7,7 @@ import {
   useRef,
 } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { userContext } from "../App";
+import { UserContext } from "../App";
 import { useSocket } from "../context/SocketContext";
 import api from "../common/api";
 import { FaHeart, FaCommentAlt, FaReply, FaEllipsisV, FaTrash, FaCheckDouble } from "react-icons/fa";
@@ -17,7 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { debounce } from "lodash";
 import { toast } from "react-hot-toast";
-import Loader from "../components/loader.component";
+import Loader from "../components/Loader";
 import ErrorDisplay from "../components/ErrorDisplay";
 
 const Notifications = () => {
@@ -35,10 +35,10 @@ const Notifications = () => {
   const {
     userAuth,
     userAuth: { _id: user_id },
-  } = useContext(userContext);
+  } = useContext(UserContext);
   const { socket } = useSocket();
   const navigate = useNavigate();
-  
+
   // 🚀 Fixed pagination with proper ref
   const [bottomRef, inView] = useInView({
     threshold: 0.1,
@@ -66,8 +66,8 @@ const Notifications = () => {
   const truncateText = useCallback((text, maxLength = 100) => {
     if (!text) return "";
     const cleanedText = text.replace(/[#*`~>]/g, '').trim();
-    return cleanedText.length <= maxLength 
-      ? cleanedText 
+    return cleanedText.length <= maxLength
+      ? cleanedText
       : `${cleanedText.substring(0, maxLength)}...`;
   }, []);
 
@@ -87,7 +87,7 @@ const Notifications = () => {
     try {
       if (notif.blog) {
         const base = `/post/${notif.blog.blog_id || notif.blog._id || notif.blogSlug}`;
-        
+
         if ((notif.type === "comment_like" || notif.type === "comment" || notif.type === "reply") && notif.comment) {
           return `${base}#comment-${notif.comment._id}`;
         }
@@ -109,7 +109,7 @@ const Notifications = () => {
 
       try {
         console.log(`📨 Fetching notifications - Page: ${pageNum}`);
-        
+
         const { data } = await api.post("/notifications", {
           page: pageNum,
           limit: 15
@@ -117,8 +117,8 @@ const Notifications = () => {
 
         console.log("📨 Notifications API Response:", data);
 
-        const newNotifications = Array.isArray(data.notifications) 
-          ? data.notifications 
+        const newNotifications = Array.isArray(data.notifications)
+          ? data.notifications
           : [];
 
         console.log(`📥 Processed ${newNotifications.length} notifications`);
@@ -140,7 +140,7 @@ const Notifications = () => {
         });
 
         setHasMore(data.hasMore !== false && newNotifications.length > 0);
-        
+
         // 🚀 Update unread count
         const unread = newNotifications.filter(n => !n.seen).length;
         if (pageNum === 1) {
@@ -151,7 +151,7 @@ const Notifications = () => {
         console.error("❌ Notification fetch error:", err);
         const errorMessage = err.response?.data?.error || "Failed to load notifications";
         setError(errorMessage);
-        
+
         if (!isRetry) {
           toast.error("Couldn't load notifications");
         }
@@ -190,10 +190,10 @@ const Notifications = () => {
   useEffect(() => {
     if (socket && user_id) {
       console.log("🔌 Setting up socket for notifications");
-      
+
       const handleNewNotification = (newNotif) => {
         console.log("🎊 New real-time notification:", newNotif);
-        
+
         const username = newNotif.user?.username || newNotif.actorUsername || "Someone";
 
         // Smart notifications based on type
@@ -237,26 +237,26 @@ const Notifications = () => {
           prev.map(n => n._id === id ? { ...n, seen: true } : n)
         );
         setUnreadCount(prev => Math.max(0, prev - 1));
-        
+
         await api.post("/notifications/mark-seen", {
           notificationId: id,
           seen: true,
         });
-        
+
         toast.success("Marked as read");
       } else {
         setIsMarkingAllRead(true);
         // Optimistic update for all
         setNotifications(prev => prev.map(n => ({ ...n, seen: true })));
         setUnreadCount(0);
-        
+
         await api.post("/notifications/mark-all-seen", {});
         toast.success("All notifications marked as read");
       }
     } catch (err) {
       console.error("Mark as read error:", err);
       toast.error("Failed to update notifications");
-      
+
       // Revert optimistic update on error
       if (id) {
         setNotifications(prev =>
@@ -327,11 +327,11 @@ const Notifications = () => {
   // 🚀 Process notifications for display
   const processedNotifications = useMemo(() => {
     return notifications.map((notif) => {
-      const content = notif.extractedContent || 
-                    notif.comment?.comment || 
-                    notif.reply?.comment || 
-                    notif.comment_like?.comment || 
-                    "Left a comment";
+      const content = notif.extractedContent ||
+        notif.comment?.comment ||
+        notif.reply?.comment ||
+        notif.comment_like?.comment ||
+        "Left a comment";
 
       return {
         ...notif,
@@ -350,8 +350,8 @@ const Notifications = () => {
 
   // 🔍 SEO optimization
   useEffect(() => {
-    document.title = unreadCount > 0 
-      ? `(${unreadCount}) Notifications | Shumse` 
+    document.title = unreadCount > 0
+      ? `(${unreadCount}) Notifications | Shumse`
       : `Notifications | Shumse`;
   }, [unreadCount]);
 
@@ -396,14 +396,14 @@ const Notifications = () => {
             <div>
               <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
               <p className="text-sm text-gray-500">
-                {notifications.length > 0 
-                  ? `${notifications.length} notifications` 
+                {notifications.length > 0
+                  ? `${notifications.length} notifications`
                   : "No notifications yet"
                 }
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <button
               onClick={() => markAsRead()}
@@ -413,7 +413,7 @@ const Notifications = () => {
               <FaCheckDouble className="text-sm" />
               {isMarkingAllRead ? "Marking..." : "Mark all read"}
             </button>
-            
+
             <button
               onClick={clearSeenNotifications}
               disabled={isClearing || !notifications.some(n => n.seen)}
@@ -448,9 +448,8 @@ const Notifications = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className={`border-b border-gray-100 transition-all duration-200 ${
-                    !notif.seen ? 'bg-blue-50/50' : 'bg-white hover:bg-gray-50'
-                  }`}
+                  className={`border-b border-gray-100 transition-all duration-200 ${!notif.seen ? 'bg-blue-50/50' : 'bg-white hover:bg-gray-50'
+                    }`}
                 >
                   <div className="p-4">
                     <div className="flex gap-4">
@@ -515,7 +514,7 @@ const Notifications = () => {
                             {!notif.seen && (
                               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                             )}
-                            
+
                             <div className="relative">
                               <button
                                 onClick={(e) => {

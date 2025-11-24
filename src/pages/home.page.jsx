@@ -8,12 +8,13 @@ import { throttle } from 'lodash';
 import { useSocket } from '../context/SocketContext'; // Import the custom hook
 import api from "../common/api"; // Import the new API instance
 import AnimationWrapper from "../common/page-animation";
-import InPageNavigation from '../components/inpage-navigation.component';
-import Loader from "../components/loader.component";
-import PostCard from '../components/blog-post.component';
-import MinimalPostCard from '../components/nobanner-blog-post.component';
-import NoDATA from '../components/nodata.component';
-import AdSection from '../components/AdSection'; 
+import InPageNavigation from '../components/InPageNavigation';
+import Loader from "../components/Loader";
+import PostCard from '../components/BlogPost';
+import MinimalPostCard from '../components/NoBannerBlogPost';
+import NoDATA from '../components/NoData';
+import AdSection from '../components/AdSection';
+import SEO from "../common/seo";
 
 // --- New Components for UI/UX ---
 import PostCardSkeleton from '../components/PostCardSkeleton';
@@ -23,7 +24,7 @@ import ErrorDisplay from '../components/ErrorDisplay';
 // --- Helper Functions for Live Updates ---
 const updateBlogLikes = (state, blog_id, total_likes) => {
     if (!state) return null;
-    
+
     // Check if it's the 'blogs' object or 'trendingBlogs' array
     const results = state.results ? state.results : state;
 
@@ -39,7 +40,7 @@ const updateBlogLikes = (state, blog_id, total_likes) => {
 
 const filterOutBlog = (state, blog_id) => {
     if (!state) return null;
-    
+
     const results = state.results ? state.results : state;
     const updatedResults = results.filter(blog => blog.blog_id !== blog_id);
 
@@ -55,7 +56,7 @@ const HomePage = () => {
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState(null); // For error handling
-    
+
     const { socket } = useSocket(); // Get socket from context
 
     // 1. REFACTORED: Central blog fetching function
@@ -92,11 +93,11 @@ const HomePage = () => {
                     };
                 }
             });
-            
+
             setHasMore(currentPage * 5 < totalDocs);
             setPageTitle(category || "Home");
             setSelectedCategory(category);
-            
+
         } catch (err) {
             console.error("Error fetching posts:", err);
             setError("Failed to load posts. Please check your connection.");
@@ -119,7 +120,7 @@ const HomePage = () => {
     // 3. REFACTORED: Category click handler
     const loadPostByCat = (e) => {
         const category = e.target.innerText;
-        
+
         if (selectedCategory === category) {
             // Clicked active category, reset to Home
             setBlogs(null); // Show skeleton
@@ -130,7 +131,7 @@ const HomePage = () => {
             fetchBlogs(category, 1);
         }
     };
-    
+
     // 4. FIX (Double Fetch): Simplified initial load effect
     useEffect(() => {
         fetchBlogs(null, 1); // Fetch initial posts (Home)
@@ -155,7 +156,7 @@ const HomePage = () => {
         // Add throttle
         const throttledScrollHandler = throttle(handleScroll, 300);
         window.addEventListener('scroll', throttledScrollHandler);
-        
+
         return () => window.removeEventListener('scroll', throttledScrollHandler);
     }, [blogs, loading, hasMore, pageTitle, fetchBlogs]);
 
@@ -203,13 +204,29 @@ const HomePage = () => {
         return <ErrorDisplay message={error} onRetry={() => fetchBlogs(selectedCategory, 1)} />;
     }
 
+    const websiteSchema = {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Shumse",
+        "url": "https://shumse.com",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://shumse.com/search/{search_term_string}",
+            "query-input": "required name=search_term_string"
+        }
+    };
+
     return (
         <AnimationWrapper>
+            <SEO
+                title={pageTitle === "Home" ? "Home" : `${pageTitle} Blogs`}
+                schema={websiteSchema}
+            />
             <section className="min-h-screen flex gap-10 pt-6">
                 {/* Left Section - Blog Posts */}
                 <div className="w-full">
                     <InPageNavigation key={pageTitle} routes={[pageTitle, "Trending Posts"]} defaultHidden={["Trending Posts"]}>
-                        
+
                         {/* Tab 1: Latest/Category Posts */}
                         <div id="blog-section" className="pt-4">
                             {
@@ -222,17 +239,17 @@ const HomePage = () => {
                                             <React.Fragment key={i}>
                                                 <AnimationWrapper transition={{ duration: 1, delay: i * 0.1 }}>
                                                     {/* Pass author object directly, PostCard handles it */}
-                                                    <PostCard content={blog} author={blog.authorId} /> 
+                                                    <PostCard content={blog} author={blog.authorId} />
                                                 </AnimationWrapper>
                                                 {(i + 1) % 3 === 0 && <AdSection key={`ad-${i}`} />}
                                             </React.Fragment>
                                         ))
-                                    : <NoDATA />
+                                        : <NoDATA />
                                 )
                             }
                             {loading && <div className="flex justify-center items-center w-full h-20"><Loader /></div>}
                         </div>
-                        
+
                         {/* Tab 2: Trending Posts */}
                         <div className="pt-4">
                             {
@@ -245,7 +262,7 @@ const HomePage = () => {
                                                 <MinimalPostCard blog={blog} index={i} />
                                             </AnimationWrapper>
                                         ))
-                                    : <NoDATA />
+                                        : <NoDATA />
                                 )
                             }
                         </div>
@@ -261,11 +278,10 @@ const HomePage = () => {
                                 <button
                                     onClick={loadPostByCat}
                                     key={i}
-                                    className={`btn-light text-black font-roboto font-light py-2 px-4 transition-all duration-300 bg-white text-black dark:bg-[#18181b] dark:text-white ${
-                                        selectedCategory === category 
-                                        ? "bg-black dark:bg-white dark:text-dark scale-105 shadow-lg" 
+                                    className={`btn-light font-roboto font-light py-2 px-4 transition-all duration-300 bg-white text-black dark:bg-[#18181b] dark:text-white ${selectedCategory === category
+                                        ? "bg-black dark:bg-white dark:text-dark scale-105 shadow-lg"
                                         : "hover:bg-gray-200"
-                                    }`}
+                                        }`}
                                 >
                                     {category}
                                 </button>
@@ -285,7 +301,7 @@ const HomePage = () => {
                                                 <MinimalPostCard blog={blog} index={i} />
                                             </AnimationWrapper>
                                         ))
-                                    : <NoDATA />
+                                        : <NoDATA />
                                 )
                             }
                         </div>

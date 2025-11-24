@@ -1,11 +1,11 @@
 // src/pages/StoriesList.jsx
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import Navbar from '../components/navbar.component';
+import api from '../common/api';
+import Navbar from '../components/Navbar';
 import StoryCard from '../components/StoryCard';
 import AdCard from '../components/AdSection';
-import NoData from '../components/nodata.component';
+import NoData from '../components/NoData';
 import { Helmet } from 'react-helmet';
 
 // Skeleton shimmer card
@@ -48,8 +48,8 @@ export default function StoriesList() {
   const fetchStories = async (cur = null) => {
     setLoading(true);
     try {
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_SERVER_DOMAIN}${endpoint}`,
+      const { data } = await api.post(
+        endpoint,
         { limit: 8, cursor: cur }
       );
       setStories(prev => (cur ? [...prev, ...data.stories] : data.stories));

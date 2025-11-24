@@ -3,19 +3,19 @@
  */
 import React, { useState, useContext, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { userContext } from '../App';
+import { UserContext } from '../App';
 import { Helmet } from 'react-helmet-async';
-import InPageNavigation from '../components/inpage-navigation.component';
+import InPageNavigation from '../components/InPageNavigation';
 import toast from 'react-hot-toast';
 import { UploadImage } from '../common/aws';
-import Loader from '../components/loader.component';
+import Loader from '../components/Loader';
 // Import the axios helper instead of defining a mutation hook
 import { createReaditPost } from '../hooks/useReaditApi';
 
 const ReaditSubmitPage = () => {
     const { communityName } = useParams();
     const navigate = useNavigate();
-    const { userAuth } = useContext(userContext);
+    const { userAuth } = useContext(UserContext);
 
     // Refs for nav component
     const navRef = useRef();
@@ -26,7 +26,7 @@ const ReaditSubmitPage = () => {
     const [content, setContent] = useState('');
     const [url, setUrl] = useState('');
     const [image, setImage] = useState('');
-    
+
     // Local loading state (Replaces TanStack 'isLoading')
     const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -41,7 +41,7 @@ const ReaditSubmitPage = () => {
 
         setIsUploading(true);
         const loadingToast = toast.loading("Uploading image...");
-        
+
         try {
             const uploadedUrl = await UploadImage(img);
             // Ensure we handle if UploadImage returns object or string
@@ -115,7 +115,7 @@ const ReaditSubmitPage = () => {
                     Posting to <span className="font-semibold text-black dark:text-white">c/{communityName}</span>
                 </p>
             </div>
-            
+
             <div className="bg-white dark:bg-grey-dark rounded-lg shadow-md border border-grey dark:border-grey-dark overflow-hidden">
                 <InPageNavigation
                     ref={navRef}
@@ -143,19 +143,19 @@ const ReaditSubmitPage = () => {
                             className="input-box h-64 resize-y font-mono text-sm leading-relaxed"
                         />
                     )}
-                    
+
                     {postType === 'image' && (
                         <div className="border-2 border-dashed border-grey dark:border-grey/30 bg-grey/5 p-8 rounded-lg text-center">
-                            <input 
-                                type="file" 
-                                id="upload-image-input" 
-                                accept="image/*" 
-                                onChange={handleImageUpload} 
-                                className="hidden" 
+                            <input
+                                type="file"
+                                id="upload-image-input"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="hidden"
                                 disabled={isUploading}
                             />
-                            <label 
-                                htmlFor="upload-image-input" 
+                            <label
+                                htmlFor="upload-image-input"
                                 className="cursor-pointer inline-flex flex-col items-center gap-2"
                             >
                                 <i className="fi fi-rr-picture text-4xl text-dark-grey"></i>
@@ -163,7 +163,7 @@ const ReaditSubmitPage = () => {
                                     {image ? "Change Image" : "Upload Image"}
                                 </span>
                             </label>
-                            
+
                             {image && (
                                 <div className="mt-4 relative inline-block">
                                     <img src={image} alt="Post preview" className="max-h-64 rounded-md shadow-sm" />
@@ -171,10 +171,10 @@ const ReaditSubmitPage = () => {
                             )}
                         </div>
                     )}
-                    
+
                     {postType === 'link' && (
                         <div className="relative">
-                             <i className="fi fi-rr-link-alt absolute left-4 top-1/2 -translate-y-1/2 text-dark-grey"></i>
+                            <i className="fi fi-rr-link-alt absolute left-4 top-1/2 -translate-y-1/2 text-dark-grey"></i>
                             <input
                                 type="url"
                                 placeholder="https://example.com"
@@ -186,16 +186,16 @@ const ReaditSubmitPage = () => {
                     )}
 
                     <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-grey dark:border-grey/20">
-                        <button 
-                            onClick={() => navigate(-1)} 
+                        <button
+                            onClick={() => navigate(-1)}
                             className="btn-light px-6"
                             disabled={isLoading}
                         >
                             Cancel
                         </button>
-                        <button 
-                            onClick={handleSubmit} 
-                            disabled={isLoading || isUploading} 
+                        <button
+                            onClick={handleSubmit}
+                            disabled={isLoading || isUploading}
                             className="btn-dark px-8 flex items-center gap-2"
                         >
                             {isLoading ? <Loader /> : "Post"}

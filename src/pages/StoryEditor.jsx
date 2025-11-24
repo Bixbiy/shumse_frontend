@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import axios from 'axios';
+import api from '../common/api';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
@@ -8,9 +8,9 @@ import { FiPlus, FiImage, FiX, FiRotateCw } from 'react-icons/fi';
 // Import ReactQuill if you use it. It's commented out in your original file.
 // import ReactQuill from 'react-quill';
 // import 'react-quill/dist/quill.snow.css';
-import { userContext } from '../App';
+import { UserContext } from '../App';
 import { UploadImage } from '../common/aws';
-import Tags from '../components/tags.component';
+import Tags from '../components/Tags';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
@@ -23,7 +23,7 @@ export default function StoryEditor() {
   });
   const [loading, setLoading] = useState({ publishing: false });
   const navigate = useNavigate();
-  const { userAuth: { access_token } } = useContext(userContext);
+  const { userAuth: { access_token } } = useContext(UserContext);
 
   // Banner dropzone with file type/size validation
   const { getRootProps, getInputProps } = useDropzone({
@@ -38,7 +38,7 @@ export default function StoryEditor() {
     onDrop: async (files) => {
       const file = files[0];
       if (!file) return;
-      
+
       // Extra validation
       if (!file.type.startsWith('image/')) {
         toast.error("Invalid file type. Please upload an image.");
@@ -54,7 +54,7 @@ export default function StoryEditor() {
         // UploadImage now returns an object { url, public_id }.
         // We destructure 'url' from it.
         const { url } = await UploadImage(file);
-        
+
         setStory(prev => ({ ...prev, banner: url }));
         toast.success('Banner uploaded successfully!');
       } catch (error) {
@@ -68,9 +68,9 @@ export default function StoryEditor() {
   const handleMultipleSlidesUpload = async (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    
+
     const fileArray = Array.from(files);
-    
+
     // Filter out any non-image or large files
     const validFiles = fileArray.filter(file => {
       if (!file.type.startsWith('image/')) {
@@ -104,42 +104,42 @@ export default function StoryEditor() {
     await Promise.all(
       validFiles.map(async (file) => {
         try {
-            // --- MODIFIED ---
-            // Destructure 'url' from the response object
-            const { url } = await UploadImage(file);
+          // --- MODIFIED ---
+          // Destructure 'url' from the response object
+          const { url } = await UploadImage(file);
 
-            setStory(prev => {
-                const updatedSlides = [...prev.slides];
-                // Find the slide that matches this file object to update the correct one
-                const targetIndex = updatedSlides.findIndex(s => s.file === file);
-                
-                if (targetIndex !== -1) {
-                    updatedSlides[targetIndex] = {
-                        ...updatedSlides[targetIndex],
-                        url: url, // Use the extracted URL
-                        loading: false,
-                        file: null, // Clear file object to free memory
-                    };
-                }
-                return { ...prev, slides: updatedSlides };
-            });
-            toast.success(`Image uploaded!`);
+          setStory(prev => {
+            const updatedSlides = [...prev.slides];
+            // Find the slide that matches this file object to update the correct one
+            const targetIndex = updatedSlides.findIndex(s => s.file === file);
+
+            if (targetIndex !== -1) {
+              updatedSlides[targetIndex] = {
+                ...updatedSlides[targetIndex],
+                url: url, // Use the extracted URL
+                loading: false,
+                file: null, // Clear file object to free memory
+              };
+            }
+            return { ...prev, slides: updatedSlides };
+          });
+          toast.success(`Image uploaded!`);
 
         } catch (error) {
-            setStory(prev => {
-                const updatedSlides = [...prev.slides];
-                const targetIndex = updatedSlides.findIndex(s => s.file === file);
-                
-                if (targetIndex !== -1) {
-                    updatedSlides[targetIndex] = {
-                        ...updatedSlides[targetIndex],
-                        loading: false,
-                        error: 'Upload failed. Click to retry.'
-                    };
-                }
-                return { ...prev, slides: updatedSlides };
-            });
-            toast.error(`An image upload failed`);
+          setStory(prev => {
+            const updatedSlides = [...prev.slides];
+            const targetIndex = updatedSlides.findIndex(s => s.file === file);
+
+            if (targetIndex !== -1) {
+              updatedSlides[targetIndex] = {
+                ...updatedSlides[targetIndex],
+                loading: false,
+                error: 'Upload failed. Click to retry.'
+              };
+            }
+            return { ...prev, slides: updatedSlides };
+          });
+          toast.error(`An image upload failed`);
         }
       })
     );
@@ -156,7 +156,7 @@ export default function StoryEditor() {
       toast.error("File too large. Maximum file size is 5MB.");
       return;
     }
-    
+
     const updatedSlides = [...story.slides];
     updatedSlides[index] = {
       ...updatedSlides[index],
@@ -169,27 +169,27 @@ export default function StoryEditor() {
       // --- MODIFIED ---
       // Destructure 'url' from the response object
       const { url } = await UploadImage(file);
-      
+
       setStory(prev => {
-          const newSlides = [...prev.slides];
-          newSlides[index] = {
-            ...newSlides[index],
-            url: url, // Use the extracted URL
-            loading: false,
-            file: null
-          };
-          return { ...prev, slides: newSlides };
+        const newSlides = [...prev.slides];
+        newSlides[index] = {
+          ...newSlides[index],
+          url: url, // Use the extracted URL
+          loading: false,
+          file: null
+        };
+        return { ...prev, slides: newSlides };
       });
       toast.success(`Slide ${index + 1} uploaded!`);
     } catch (error) {
       setStory(prev => {
-          const newSlides = [...prev.slides];
-          newSlides[index] = {
-            ...newSlides[index],
-            loading: false,
-            error: 'Upload failed. Click to retry.'
-          };
-          return { ...prev, slides: newSlides };
+        const newSlides = [...prev.slides];
+        newSlides[index] = {
+          ...newSlides[index],
+          loading: false,
+          error: 'Upload failed. Click to retry.'
+        };
+        return { ...prev, slides: newSlides };
       });
       toast.error(`Slide ${index + 1} upload failed`);
     }
@@ -230,18 +230,13 @@ export default function StoryEditor() {
         }))
       };
 
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_SERVER_DOMAIN}/create-story`,
-        storyData,
-        {
-          headers: { Authorization: `Bearer ${access_token}` }
-        }
-      );
+      await api.post('/create-story', storyData);
 
-      toast.success('Story published!');
-      navigate(`/story/${data.story_id}`);
+      toast.success('Story published successfully!');
+      navigate('/');
     } catch (error) {
-      toast.error(error.response?.data?.error || error.message);
+      console.error("Publish error:", error);
+      toast.error(error.response?.data?.error || error.message || 'Failed to publish story');
     } finally {
       setLoading({ publishing: false });
     }

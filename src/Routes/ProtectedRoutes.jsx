@@ -1,12 +1,14 @@
 // ProtectedRoute.jsx
 import { useContext } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { userContext } from '../App';
+import { UserContext } from '../App';
 import { toast } from 'react-toastify';
 import { Toaster } from 'react-hot-toast';
 import { Link } from 'react-router-dom';
+
 const ProtectedRoute = ({ allowedRoles = ['admin', 'editor'] }) => {
-    const { userAuth: { role } } = useContext(userContext);
+    const { userAuth } = useContext(UserContext);
+    const role = userAuth?.role;
 
     if (!userAuth?.access_token) {
         return <Navigate to="/signin" replace />;

@@ -1,6 +1,6 @@
 // ── src/common/filter-pagination-data.js ──
 
-import axios from "axios";
+import api from "./api";
 
 export const FilterPagination = async ({
      state,
@@ -11,13 +11,6 @@ export const FilterPagination = async ({
      user = undefined,
 }) => {
      let obj;
-     const headers = {};
-
-     if (user) {
-          headers.headers = {
-               Authorization: `Bearer ${user}`,
-          };
-     } 
 
      if (state != null && page > 1) {
           // Deduplicate by _id before merging
@@ -34,11 +27,7 @@ export const FilterPagination = async ({
           try {
                const {
                     data: { totalDocs },
-               } = await axios.post(
-                    import.meta.env.VITE_SERVER_DOMAIN + countRoute,
-                    data_to_send,
-                    headers
-               );
+               } = await api.post(countRoute, data_to_send);
                obj = { results: arr_data, page: 1, totalDocs };
           } catch (err) {
                console.error("FilterPagination count error:", err);

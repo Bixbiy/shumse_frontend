@@ -1,53 +1,63 @@
-// ── src/pages/blog.page.jsx (Final Integrated Version) ──
-
-import React, { createContext, useEffect, useState, useCallback, useMemo, useContext } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Toaster, toast } from 'react-hot-toast';
-import AnimationWrapper from '../common/page-animation';
-import { formatDate, formatReadingTime } from '../common/date';
-import BlogInteraction from '../components/blog-interaction.component';
-import BlogContent from '../components/blog-content.component';
-import CommentsContainer from '../components/comments.component';
-import ErrorBoundary from '../components/ErrorBoundary';
-import { Helmet } from 'react-helmet-async';
+import React, { useEffect, useState, useCallback, useMemo, createContext } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import LazyLoad from 'react-lazyload';
-
-// --- UPDATED IMPORTS ---
-import api from '../common/api'; // Centralized API wrapper
-import { useSocket } from '../context/SocketContext'; // Centralized socket
-import BlogPageSkeleton from '../components/BlogPageSkeleton'; // Your skeleton loader
-import ErrorDisplay from '../components/ErrorDisplay'; // Your error component
-import ProgressiveImage from '../components/ProgressiveImage'; // Your progressive image
-import { fetchComments as fetchCommentsAPI } from '../utils/comment.api'; // Fixed API function
-import { userContext } from '../App';
-
-export const postStructure = {
-  title: '',
-  des: "",
-  content: [],
-  tags: [],
-  authorId: { personal_info: {} },
-  banner: '',
-  publishedAt: '',
-  readingTime: 0,
-  activity: { total_likes: 0, total_comments: 0, total_parent_comments: 0, isLikedByUser: false }
-};
+import { Toaster } from "react-hot-toast";
+import AnimationWrapper from "../common/page-animation";
+import api from "../common/api";
+import { useSocket } from "../context/SocketContext";
+import { fetchCommentsAPI } from "../common/api";
+import BlogInteraction from "../components/BlogInteraction";
+import BlogContent from "../components/BlogContent";
+import Comments from "../components/Comments";
+import BlogPageSkeleton from "../components/BlogPageSkeleton";
+import ErrorDisplay from "../components/ErrorDisplay";
+import ErrorBoundary from "../components/ErrorBoundary";
+import ProgressiveImage from "../components/ProgressiveImage";
+import SEO from "../common/seo";
 
 export const postContext = createContext({});
+
+const formatDate = (dateStr) => {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+const formatReadingTime = (minutes) => {
+  return `${minutes} min read`;
+};
+
+const CommentsContainer = () => {
+  const [commentsWrapper, setCommentsWrapper] = useState(false);
+  return (
+    <postContext.Provider value={{ commentsWrapper, setCommentsWrapper }}>
+      {commentsWrapper && <Comments />}
+    </postContext.Provider>
+  );
+};
 
 const BlogPage = () => {
   const { blog_id } = useParams();
   const navigate = useNavigate();
-  
-  // --- UPDATED: Use centralized socket ---
   const { socket } = useSocket();
-  const { userAuth } = useContext(userContext);
 
-  const [blog, setBlog] = useState(postStructure);
+  const [blog, setBlog] = useState({
+    title: '',
+    des: '',
+    content: [],
+    banner: '',
+    authorId: {},
+    tags: [],
+    activity: {},
+    publishedAt: '',
+    readingTime: 5
+  });
   const [similarBlogs, setSimilarBlogs] = useState([]);
-  const [commentsWrapper, setCommentsWrapper] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [commentsWrapper, setCommentsWrapper] = useState(false);
 
   const {
     title,
@@ -59,15 +69,6 @@ const BlogPage = () => {
     tags = [],
     readingTime,
   } = blog;
-
-  const blogMeta = useMemo(() => ({
-    title: `${title} | Your Blog Name`,
-    description: description || `${title} - A post by ${fullname}`,
-    keywords: tags.join(', '),
-    author: fullname,
-    url: window.location.href,
-    image: banner
-  }), [title, description, fullname, tags, banner]);
 
   // Core data-loading function with centralized API
   const fetchPost = useCallback(async () => {
@@ -106,12 +107,12 @@ const BlogPage = () => {
       if (similarData.status === 'fulfilled' && similarData.value.data) {
         setSimilarBlogs(similarData.value.data);
       }
-      
+
     } catch (err) {
       console.error('Error fetching blog post:', err);
       const errorMessage = err.response?.data?.error || err.message || 'Failed to load blog post';
       setError(errorMessage);
-      
+
       if (err.response?.status === 404) {
         navigate('/404', { replace: true });
       }
@@ -135,16 +136,16 @@ const BlogPage = () => {
   // --- Real-time Socket Listeners ---
   useEffect(() => {
     if (!socket || !blog_id) return;
-    
+
     // Join the room for this post
     socket.emit('joinPostRoom', { blog_id });
-    
+
     const handleLikeUpdate = (data) => {
       if (data.blog_id === blog_id) {
         updateBlogActivity({ total_likes: data.total_likes });
       }
     };
-    
+
     const handlePostDeleted = (data) => {
       if (data.blog_id === blog_id) {
         toast.error("This post has been deleted by the author.");
@@ -154,7 +155,7 @@ const BlogPage = () => {
 
     socket.on('likeUpdate', handleLikeUpdate);
     socket.on('postDeleted', handlePostDeleted);
-    
+
     // Cleanup: leave the room
     return () => {
       socket.off('likeUpdate', handleLikeUpdate);
@@ -177,34 +178,27 @@ const BlogPage = () => {
 
   return (
     <ErrorBoundary>
-      <Helmet>
-        <title>{blogMeta.title}</title>
-        <meta name="description" content={blogMeta.description} />
-        <meta name="keywords" content={blogMeta.keywords} />
-        <meta name="author" content={blogMeta.author} />
-        <meta property="og:title" content={blogMeta.title} />
-        <meta property="og:description" content={blogMeta.description} />
-        <meta property="og:image" content={blogMeta.image} />
-        <meta property="og:url" content={blogMeta.url} />
-        <meta property="og:type" content="article" />
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "BlogPosting",
-            "headline": title,
-            "description": description,
-            "image": banner,
-            "author": {
-              "@type": "Person",
-              "name": fullname
-            },
-            "datePublished": publishedAt,
-            "timeRequired": `PT${readingTime}M`,
-            "wordCount": content[0]?.blocks?.reduce((acc, block) => acc + (block.data?.text?.split(' ').length || 0), 0) || 0
-          })}
-        </script>
-      </Helmet>
-      
+      <SEO
+        title={title}
+        description={description || `${title} - A post by ${fullname}`}
+        image={banner}
+        type="article"
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          "headline": title,
+          "description": description,
+          "image": banner,
+          "author": {
+            "@type": "Person",
+            "name": fullname
+          },
+          "datePublished": publishedAt,
+          "timeRequired": `PT${readingTime}M`,
+          "wordCount": content[0]?.blocks?.reduce((acc, block) => acc + (block.data?.text?.split(' ').length || 0), 0) || 0
+        }}
+      />
+
       <AnimationWrapper>
         <postContext.Provider value={{
           blog,
@@ -214,8 +208,8 @@ const BlogPage = () => {
           setCommentsWrapper
         }}>
           <Toaster />
-          <CommentsContainer />
-          
+          {commentsWrapper && <Comments />}
+
           <article className="max-w-[900px] center py-10 max-lg:px-[5vw]">
             <header className="mb-12">
               <LazyLoad height={500} once offset={100}>
@@ -282,7 +276,7 @@ const BlogPage = () => {
 
             <footer className="mt-16">
               <BlogInteraction />
-              
+
               {/* Tags */}
               {tags.length > 0 && (
                 <div className="mt-8">

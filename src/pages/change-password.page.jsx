@@ -1,15 +1,15 @@
 import toast, { Toaster } from "react-hot-toast";
 import AnimationWrapper from "../common/page-animation";
-import InputBox from "../components/input.component";
+import InputBox from "../components/Input";
 import { useContext, useRef, useState } from "react";
-import axios from "axios";
-import { userContext } from "../App";
+import api from "../common/api";
+import { UserContext } from "../App";
 
 const ChangePassword = () => {
     const formRef = useRef();
     const {
         userAuth: { access_token },
-    } = useContext(userContext);
+    } = useContext(UserContext);
     const [loading, setLoading] = useState(false);
 
     const PassRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,20}$/;
@@ -36,12 +36,11 @@ const ChangePassword = () => {
         const loadingToast = toast.loading("Updating password…");
 
         try {
-            const res = await axios.post(
-                `${import.meta.env.VITE_SERVER_DOMAIN}/change-password`,
+            const res = await api.post(
+                "/change-password",
                 { currentPassword, newPassword },
                 {
                     headers: {
-                        Authorization: `Bearer ${access_token}`,
                         "Content-Type": "application/json",
                     },
                     // never throw on HTTP errors—let us handle them:

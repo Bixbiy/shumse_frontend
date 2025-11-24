@@ -1,11 +1,11 @@
 // src/pages/EditProfile.jsx
 
 import { useContext, useEffect, useRef, useState } from "react";
-import { userContext } from "../App";
-import axios from "axios";
+import { UserContext } from "../App";
+import api from "../common/api";
 import AnimationWrapper from "../common/page-animation";
-import Loader from "../components/loader.component";
-import InputBox from "../components/input.component";
+import Loader from "../components/Loader";
+import InputBox from "../components/Input";
 import { Toaster, toast } from "react-hot-toast";
 import { UploadImage } from "../common/aws";
 import { storeInSession } from "../common/session";
@@ -16,7 +16,7 @@ const EditProfile = () => {
         userAuth,
         userAuth: { access_token, id: userId },
         setUserAuth,
-    } = useContext(userContext);
+    } = useContext(UserContext);
 
     // ─── State ────────────────────────────────────────────────────────────────
     const [loading, setLoading] = useState(true);
@@ -100,13 +100,10 @@ const EditProfile = () => {
             return;
         }
 
-        axios
+        api
             .post(
-                `${import.meta.env.VITE_SERVER_DOMAIN}/get-profile`,
-                { username: userAuth.username },
-                {
-                    headers: { Authorization: `Bearer ${access_token}` },
-                }
+                "/get-profile",
+                { username: userAuth.username }
             )
             .then(({ data }) => {
                 const { personal_info, social_links = {} } = data;
@@ -195,10 +192,9 @@ const EditProfile = () => {
                 body.cloudinary_id = uploadResult.public_id;
             }
 
-            const res = await axios.post(
-                `${import.meta.env.VITE_SERVER_DOMAIN}/changeImg`,
-                body,
-                { headers: { Authorization: `Bearer ${access_token}` } }
+            const res = await api.post(
+                "/changeImg",
+                body
             );
 
             // Update userAuth and session using backend's returned profile_img if available,
@@ -252,12 +248,9 @@ const EditProfile = () => {
         };
 
         try {
-            await axios.post(
-                `${import.meta.env.VITE_SERVER_DOMAIN}/api/v1/update-profile`,
-                payload,
-                {
-                    headers: { Authorization: `Bearer ${access_token}` },
-                }
+            await api.post(
+                "/update-profile",
+                payload
             );
             toast.success("Profile updated successfully!");
 

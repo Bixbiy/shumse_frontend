@@ -1,12 +1,12 @@
 import React, { useState, useContext } from 'react';
-import { userContext } from '../../App'; // Use the context from App.jsx
+import { UserContext } from '../../App'; // Use the context from App.jsx
 import { apiCreateReaditPost } from '../../common/api';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import Loader from '../loader.component'; // Use your existing Loader
+import Loader from '../Loader'; // Use your existing Loader
 
 const CreatePostForm = ({ onPostCreated }) => {
-  const { userAuth } = useContext(userContext);
+  const { userAuth } = useContext(UserContext);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,7 +53,7 @@ const CreatePostForm = ({ onPostCreated }) => {
             required
           />
         </div>
-        
+
         <AnimatePresence>
           {isExpanded && (
             <motion.div
@@ -88,7 +88,7 @@ const CreatePostForm = ({ onPostCreated }) => {
                   className="btn-dark text-sm flex items-center disabled:opacity-50"
                 >
                   {isSubmitting ? (
-                    <Loader/>
+                    <Loader />
                   ) : (
                     <i className="fi fi-rr-paper-plane mr-2"></i>
                   )}

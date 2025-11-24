@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect, useContext } from 'react';
 import { Helmet } from "react-helmet-async";
-import axios from "axios";
+import api from "../common/api";
 import { Toaster, toast } from "react-hot-toast";
-import { userContext } from "../App";
+import { UserContext } from "../App";
 // import Skeleton from "react-loading-skeleton"; // If you want a skeleton loader, install this package
 
 const initialContact = { name: '', email: '', subject: '', message: '' };
@@ -14,7 +14,7 @@ const sanitize = (str) =>
     : str;
 
 const ContactPage = () => {
-  const { userAuth } = useContext(userContext) || {};
+  const { userAuth } = useContext(UserContext) || {};
   const isLoggedIn = !!userAuth?.access_token;
   const [activeTab, setActiveTab] = useState('contact');
   const [contactForm, setContactForm] = useState(initialContact);
@@ -45,11 +45,10 @@ const ContactPage = () => {
     setLoadingProfile(true);
     setProfileLoaded(false);
     let userEmail = "";
-    axios
+    api
       .post(
-        `${import.meta.env.VITE_SERVER_DOMAIN}/get-profile`,
-        { username: userAuth.username },
-        { headers: { Authorization: `Bearer ${userAuth.access_token}` } }
+        "/get-profile",
+        { username: userAuth.username }
       )
       .then(({ data }) => {
         const { personal_info } = data;
@@ -65,8 +64,8 @@ const ContactPage = () => {
           email: personal_info.email || "",
         }));
         // Fetch latest editor application status
-        return axios.get(
-          `${import.meta.env.VITE_SERVER_DOMAIN}/editor-application/status?email=${encodeURIComponent(userEmail)}`
+        return api.get(
+          `/editor-application/status?email=${encodeURIComponent(userEmail)}`
         );
       })
       .then(({ data }) => {
@@ -103,11 +102,11 @@ const ContactPage = () => {
     setIsSubmitting(true);
     setSubmitStatus(null);
 
-    let endpoint = `${import.meta.env.VITE_SERVER_DOMAIN}/contact`;
+    let endpoint = "/contact";
     let payload = contactForm;
 
     if (activeTab === 'editor') {
-      endpoint = `${import.meta.env.VITE_SERVER_DOMAIN}/apply-editor`;
+      endpoint = "/apply-editor";
       payload = editorForm;
       if (!editorForm.agree) {
         setSubmitStatus('Please agree to the terms and conditions.');
@@ -122,7 +121,7 @@ const ContactPage = () => {
     });
 
     try {
-      await axios.post(endpoint, payload, {
+      await api.post(endpoint, payload, {
         headers: { 'Content-Type': 'application/json' }
       });
       setSubmitStatus('success');
@@ -131,8 +130,8 @@ const ContactPage = () => {
       // Refetch application status after successful apply
       if (activeTab === "editor") {
         setLoadingProfile(true);
-        const { data } = await axios.get(
-          `${import.meta.env.VITE_SERVER_DOMAIN}/editor-application/status?email=${encodeURIComponent(payload.email)}`
+        const { data } = await api.get(
+          `/editor-application/status?email=${encodeURIComponent(payload.email)}`
         );
         setEditorAppStatus(data);
         setLoadingProfile(false);

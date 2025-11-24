@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../common/api';
 import AnimationWrapper from '../common/page-animation';
-import PostCard from '../components/blog-post.component';
+import PostCard from '../components/BlogPost';
 
 const SimilarPosts = ({ tags, currentPostId }) => {
     const [similarPosts, setSimilarPosts] = useState([]);
@@ -20,8 +20,8 @@ const SimilarPosts = ({ tags, currentPostId }) => {
                 setLoading(true);
                 setError(null);
 
-                const { data } = await axios.post(
-                    `${import.meta.env.VITE_SERVER_DOMAIN}/similar/posts`,
+                const { data } = await api.post(
+                    "/similar/posts",
                     {
                         tag: tags[0],
                         blog_id: currentPostId,

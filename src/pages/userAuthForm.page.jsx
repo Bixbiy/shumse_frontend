@@ -1,19 +1,16 @@
-// ── src/pages/userAuthForm.page.jsx ──
-// Fixed API integration, typo, and updated UI/dark mode.
-
 import React, { useContext, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import googleIcon from "../imgs/google.png";
 import AnimationWrapper from "../common/page-animation";
 import { Toaster, toast } from "react-hot-toast";
 import { storeInSession } from "../common/session";
-import { userContext } from "../App";
-import { authWithGoogle } from "../common/firebase"; // FIX: Corrected typo 'sauthWithGoogle'
-import Navbar from "../components/navbar.component";
-import api from "../common/api"; // REFACTOR: Import the central API client
+import { UserContext } from "../App";
+import { authWithGoogle } from "../common/firebase";
+import Navbar from "../components/Navbar";
+import api, { setAuthToken } from "../common/api";
 
 const UserAuthForm = ({ type }) => {
-    const { userAuth, setUserAuth } = useContext(userContext);
+    const { userAuth, setUserAuth } = useContext(UserContext);
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState("");
@@ -30,6 +27,9 @@ const UserAuthForm = ({ type }) => {
         try {
             // FIX: Use the 'api' client. No full URL, headers, or 'withCredentials' needed.
             const { data } = await api.post(serverRoute, formData);
+
+            // CRITICAL FIX: Set the auth token in memory for the API interceptor
+            setAuthToken(data.user.access_token);
 
             storeInSession("user", JSON.stringify(data.user));
             setUserAuth(data.user);
@@ -50,8 +50,7 @@ const UserAuthForm = ({ type }) => {
     const handleGoogleAuth = async (e) => {
         e.preventDefault();
         try {
-            // FIX: Corrected typo 'sauthWithGoogle'
-            const user = await authWithGoogle(); 
+            const user = await authWithGoogle();
             if (user) {
                 const googleUser = {
                     fullname: user.displayName,
@@ -214,65 +213,55 @@ const UserAuthForm = ({ type }) => {
                     >
                         {loading ? (
                             <div className="flex items-center">
-                                <svg
-                                    className="animate-spin h-5 w-5 mr-3 text-white"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <circle
-                                        className="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        strokeWidth="4"
-                                    ></circle>
-                                    <path
-                                        className="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                    ></path>
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
                                 Processing...
                             </div>
                         ) : (
-                            type.replace("-", " ")
+                            type === "sign-in" ? "Sign In" : "Sign Up"
                         )}
                     </button>
 
-                    <div className="relative flex items-center my-6">
-                        <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
-                        <span className="flex-shrink mx-4 text-gray-500 dark:text-gray-400">OR</span>
-                        <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+                    <div className="relative my-8">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                                Or continue with
+                            </span>
+                        </div>
                     </div>
 
                     <button
                         type="button"
                         onClick={handleGoogleAuth}
-                        disabled={loading}
-                        className="w-full flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+                        className="w-full flex justify-center items-center gap-3 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                     >
-                        <img src={googleIcon} alt="google-sign-in" className="w-5 h-5" />
+                        <img src={googleIcon} className="w-5 h-5" alt="Google" />
                         Continue with Google
                     </button>
 
-                    <div className="mt-6 text-center">
-                        {type === "sign-in" ? (
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Don't have an account?{" "}
-                                <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
-                                    Create Now
-                                </Link>
-                            </p>
-                        ) : (
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Already have an account?{" "}
-                                <Link to="/signin" className="font-medium text-indigo-600 hover:text-indigo-500">
-                                    Sign In here
-                                </Link>
-                            </p>
-                        )}
+                    <div className="mt-8 text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {type === "sign-in" ? (
+                                <>
+                                    Don't have an account?{" "}
+                                    <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+                                        Join us today
+                                    </Link>
+                                </>
+                            ) : (
+                                <>
+                                    Already a member?{" "}
+                                    <Link to="/signin" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+                                        Sign in here
+                                    </Link>
+                                </>
+                            )}
+                        </p>
                     </div>
                 </form>
             </section>

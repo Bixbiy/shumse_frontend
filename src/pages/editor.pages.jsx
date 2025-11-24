@@ -1,11 +1,11 @@
 import React, { useContext, useState, createContext, useEffect } from "react";
-import { userContext } from "../App";
+import { UserContext } from "../App";
 import { Navigate, useParams, useNavigate } from "react-router-dom";
-import BlogEditor from "../components/blog-editor.component";
-import PublishForm from "../components/publish-form.component";
+import BlogEditor from "../components/BlogEditor";
+import PublishForm from "../components/PublishForm";
 import StoryEditor from "./StoryEditor";
-import Loader from "../components/loader.component";
-import axios from "axios";
+import Loader from "../components/Loader";
+import api from "../common/api";
 import { toast } from "react-hot-toast";
 
 const BlogStructure = {
@@ -43,7 +43,7 @@ const Editor = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const { userAuth: { access_token } } = useContext(userContext);
+  const { userAuth: { access_token } } = useContext(UserContext);
 
   useEffect(() => {
     if (!blog_id) {
@@ -53,14 +53,9 @@ const Editor = () => {
 
     const fetchPost = async () => {
       try {
-        const { data } = await axios.post(
-          import.meta.env.VITE_SERVER_DOMAIN + "/get-post",
-          { blog_id, draft: true, mode: "edit" },
-          {
-            headers: {
-              Authorization: `Bearer ${access_token}`
-            }
-          }
+        const { data } = await api.post(
+          "/get-post",
+          { blog_id, draft: true, mode: "edit" }
         );
 
         setBlog(data.blog);

@@ -1,0 +1,113 @@
+@layer components {
+  /* Standardized Input and Form Styles */
+
+  /* Base Text Input */
+  .input-text {
+    @apply w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600
+           rounded-lg bg-white dark:bg-gray-800
+           text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500
+           focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-900
+           transition-colors duration-200;
+  }
+
+  /* Input with Error */
+  .input-error {
+    @apply input-text border-red-500 dark:border-red-400
+           focus:ring-red-500 focus:border-red-500;
+  }
+
+  /* Input with Success */
+  .input-success {
+    @apply input-text border-green-500 dark:border-green-400
+           focus:ring-green-500 focus:border-green-500;
+  }
+
+  /* Search Input */
+  .input-search {
+    @apply input-text pl-10 pr-4;
+  }
+
+  /* Textarea */
+  .input-textarea {
+    @apply input-text min-h-[100px] max-h-[300px] resize-y;
+  }
+
+  /* Select Dropdown */
+  .input-select {
+    @apply input-text pr-10 cursor-pointer appearance-none
+           bg-no-repeat bg-right;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right 0.5rem center;
+    background-size: 1.5em 1.5em;
+  }
+
+  /* Checkbox */
+  .input-checkbox {
+    @apply w-4 h-4 text-indigo-600 bg-gray-100 dark:bg-gray-800
+           border-gray-300 dark:border-gray-600 rounded
+           focus:ring-2 focus:ring-indigo-500
+           cursor-pointer;
+  }
+
+  /* Radio Button */
+  .input-radio {
+    @apply w-4 h-4 text-indigo-600 bg-gray-100 dark:bg-gray-800
+           border-gray-300 dark:border-gray-600
+           focus:ring-2 focus:ring-indigo-500
+           cursor-pointer;
+  }
+
+  /* Toggle Switch */
+  .input-toggle {
+    @apply relative inline-flex h-6 w-11 items-center rounded-full
+           bg-gray-200 dark:bg-gray-700
+           transition-colors duration-200 ease-in-out
+           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+           cursor-pointer;
+  }
+
+  .input-toggle:checked {
+    @apply bg-indigo-600;
+  }
+
+  .input-toggle::after {
+    content: '';
+    @apply absolute left-1 top-1 h-4 w-4 
+           transform rounded-full bg-white
+           transition-transform duration-200 ease-in-out;
+  }
+
+  .input-toggle:checked::after {
+    @apply translate-x-5;
+  }
+
+  /* Label */
+  .input-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+  }
+
+  /* Help Text */
+  .input-help {
+    @apply mt-1 text-sm text-gray-500 dark:text-gray-400;
+  }
+
+  /* Error Message */
+  .input-error-message {
+    @apply mt-1 text-sm text-red-600 dark:text-red-400;
+  }
+
+  /* Form Group */
+  .form-group {
+    @apply mb-4;
+  }
+
+  /* Input Size Variants */
+  .input-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  .input-lg {
+    @apply px-5 py-3 text-lg;
+  }
+}

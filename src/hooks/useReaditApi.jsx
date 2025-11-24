@@ -1,19 +1,21 @@
 /*
- * MODIFIED FILE (Complete Rewrite - No TanStack Query)
- * Path: src/hooks/useReaditApi.jsx
+ * PATH: src/hooks/useReaditApi.jsx
+ * 
+ * Custom React hooks for fetching Readit data. 
+ * These hooks replaced react-query to reduce dependencies.
  */
+
 import { useState, useEffect, useContext } from 'react';
-import { userContext } from '../App';
 import api from '../common/api';
-import { toast } from 'react-hot-toast';
+import { UserContext } from '../App';
 
 // ==========================================
-// 1. DATA FETCHING HOOKS
+// 1. DATA FETCHING HOOKS (for real-time updates)
 // ==========================================
 
-// --- Private Home Feed ---
+// --- Home Feed (Personalized) ---
 export const useHomeFeed = (sort) => {
-    const { userAuth } = useContext(userContext);
+    const { userAuth } = useContext(UserContext);
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -31,19 +33,19 @@ export const useHomeFeed = (sort) => {
     useEffect(() => {
         if (!userAuth.access_token) {
             setLoading(false);
-            return; 
+            return;
         }
 
         const fetchData = async () => {
             try {
                 const { data } = await api.get(`/readit/posts/feed?sort=${sort}&page=${page}&limit=10`);
-                
+
                 if (page === 1) {
                     setPosts(data.posts);
                 } else {
                     setPosts(prev => [...prev, ...data.posts]);
                 }
-                
+
                 setHasMore(data.hasMore);
             } catch (err) {
                 console.error(err);

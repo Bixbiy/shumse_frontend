@@ -1,21 +1,21 @@
 // manage-blogs.page.jsx
 
-import axios from "axios";
+import api from "../common/api";
 import { useContext, useState, useEffect, useCallback } from "react";
-import { userContext } from "../App";
+import { UserContext } from "../App";
 import { FilterPagination } from "../common/filter-pagination-data";
 import { Toaster } from "react-hot-toast";
-import InPageNavigation from "../components/inpage-navigation.component";
-import Loader from "../components/loader.component";
+import InPageNavigation from "../components/InPageNavigation";
+import Loader from "../components/Loader";
 import AnimationWrapper from "../common/page-animation";
-import { PostManCard, DraftManCard } from "../components/manage-blogcard.component";
+import { PostManCard, DraftManCard } from "../components/ManageBlogCard";
 
 const TABS = ["Published Posts", "Drafts", "Stories"];
 
 const ManageBlog = () => {
     const {
         userAuth: { access_token },
-    } = useContext(userContext);
+    } = useContext(UserContext);
 
     //
     // ─── Local State & Loading Flags ───────────────────────────────────────────────
@@ -65,18 +65,13 @@ const ManageBlog = () => {
             setErrorPublished(null);
 
             try {
-                const { data } = await axios.post(
-                    `${import.meta.env.VITE_SERVER_DOMAIN}/get-user-blogs`,
+                const { data } = await api.post(
+                    "/get-user-blogs",
                     {
                         page: pageNumber,
                         draft: false,
                         query: searchQuery,
                         deletedDocCount: 0,
-                    },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${access_token}`,
-                        },
                     }
                 );
 
@@ -108,18 +103,13 @@ const ManageBlog = () => {
             setErrorDrafts(null);
 
             try {
-                const { data } = await axios.post(
-                    `${import.meta.env.VITE_SERVER_DOMAIN}/get-user-blogs`,
+                const { data } = await api.post(
+                    "/get-user-blogs",
                     {
                         page: pageNumber,
                         draft: true,
                         query: searchQuery,
                         deletedDocCount: 0,
-                    },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${access_token}`,
-                        },
                     }
                 );
 
@@ -150,14 +140,9 @@ const ManageBlog = () => {
         setErrorStories(null);
         try {
             // Placeholder: replace endpoint /get-user-stories if you build it
-            const { data } = await axios.post(
-                `${import.meta.env.VITE_SERVER_DOMAIN}/get-user-stories`,
-                { page: pageNumber, query: searchQuery },
-                {
-                    headers: {
-                        Authorization: `Bearer ${access_token}`,
-                    },
-                }
+            const { data } = await api.post(
+                "/get-user-stories",
+                { page: pageNumber, query: searchQuery }
             );
 
             const formatted = {
