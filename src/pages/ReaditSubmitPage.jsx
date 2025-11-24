@@ -4,11 +4,11 @@
  */
 import React, { useState, useContext, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { UserContext } from '../App';
+import { userContext } from '../App';
 import { Helmet } from 'react-helmet-async';
 import { useQueryClient } from '@tanstack/react-query';
 import InPageNavigation from '../components/inpage-navigation.component';
-import { uploadImage } from '../common/api'; // Using your existing uploader
+import { UploadImage } from '../common/aws'; // Using your existing uploader
 import toast from 'react-hot-toast';
 import axios from 'axios';
 
@@ -18,7 +18,7 @@ const API_DOMAIN = import.meta.env.VITE_SERVER_DOMAIN + "/api/v1/readit";
 // For brevity, I'll define it here, but it should be moved to your hook file.
 const useCreateReaditPost = () => {
     const queryClient = useQueryClient();
-    const { userAuth } = useContext(UserContext);
+    const { userAuth } = useContext(userContext);
 
     return useMutation({
         mutationFn: ({ communityName, postData }) =>
@@ -40,7 +40,7 @@ const useCreateReaditPost = () => {
 const ReaditSubmitPage = () => {
     const { communityName } = useParams();
     const navigate = useNavigate();
-    const { userAuth } = useContext(UserContext);
+    const { userAuth } = useContext(userContext);
 
     // Refs for nav component
     const navRef = useRef();
@@ -65,7 +65,7 @@ const ReaditSubmitPage = () => {
 
         let loadingToast = toast.loading("Uploading image...");
         try {
-            const uploadedUrl = await uploadImage(img); //
+            const uploadedUrl = await UploadImage(img); //
             setImage(uploadedUrl);
             toast.success("Image uploaded!");
         } catch (err) {

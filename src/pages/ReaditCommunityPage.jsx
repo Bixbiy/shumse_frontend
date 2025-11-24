@@ -1,7 +1,7 @@
 /*
  * PATH: src/pages/ReaditCommunityPage.jsx
  */
-import React, { useState, useEffect, useRef, useCallback, useContext } from 'react';
+import  { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { userContext } from '../App';
 import axiosInstance from '../common/api';
