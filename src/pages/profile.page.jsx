@@ -1,5 +1,3 @@
-// src/pages/ProfilePage.jsx
-
 import React, {
   useEffect,
   useState,
@@ -9,8 +7,8 @@ import React, {
   useCallback,
 } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Helmet } from "react-helmet";
-import axios from "axios";
+import SEO from "../common/seo";
+import api from "../common/api";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaFacebookF,
@@ -20,7 +18,7 @@ import {
   FaGithub,
   FaGlobe,
 } from "react-icons/fa";
-import { userContext } from "../App";
+import { UserContext } from "../App";
 
 // Simple shimmer skeleton loader
 const ShimmerLoader = () => (
@@ -42,7 +40,7 @@ const socialConfigs = [
 
 const ProfilePage = () => {
   const { id: profileId } = useParams();
-  const { userAuth } = useContext(userContext);
+  const { userAuth } = useContext(UserContext);
   const currentUserId = useMemo(() => userAuth?.id, [userAuth]);
 
   const [profile, setProfile] = useState(null);
@@ -77,8 +75,8 @@ const ProfilePage = () => {
   // Fetch profile once
   useEffect(() => {
     setLoadingProfile(true);
-    axios
-      .post(`${import.meta.env.VITE_SERVER_DOMAIN}/api/v1/get-profile`, {
+    api
+      .post("/get-profile", {
         username: profileId,
       })
       .then(({ data }) => {
@@ -99,9 +97,9 @@ const ProfilePage = () => {
   // Fetch additional pages when page increments
   useEffect(() => {
     if (page === 1) return;
-    axios
+    api
       .get(
-        `${import.meta.env.VITE_SERVER_DOMAIN}/get-profile-posts`, // your paginated endpoint
+        "/get-profile-posts", // your paginated endpoint
         { params: { user: profileId, page, limit: 8 } }
       )
       .then(({ data }) => {
@@ -141,29 +139,20 @@ const ProfilePage = () => {
   return (
     <>
       {/* SEO Meta */}
-      <Helmet>
-        <title>
-          {fullname} (@{username}) • Profile
-        </title>
-        <meta
-          name="description"
-          content={bio || `${fullname}'s profile on OurPlatform`}
-        />
-        <meta property="og:title" content={`${fullname} (@${username})`} />
-        <meta
-          property="og:description"
-          content={bio || `${fullname}'s profile`}
-        />
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Person",
-            name: fullname,
-            url: window.location.href,
-            description: bio,
-          })}
-        </script>
-      </Helmet>
+      <SEO
+        title={`${fullname} (@${username}) • Profile`}
+        description={bio || `${fullname}'s profile on OurPlatform`}
+        image={profile_img || "/default-avatar.png"}
+        type="profile"
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "Person",
+          "name": fullname,
+          "url": window.location.href,
+          "description": bio,
+          "image": profile_img
+        }}
+      />
 
       <motion.div
         className="max-w-3xl mx-auto p-6 bg-white bg-opacity-60 backdrop-blur-md rounded-2xl shadow-xl mt-8"
@@ -348,4 +337,4 @@ const ProfilePage = () => {
   );
 };
 
-export default React.memo(ProfilePage);
+export default ProfilePage;

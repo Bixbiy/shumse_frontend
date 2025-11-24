@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import api from '../common/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import Loader from '../components/loader.component';
-import PostCard from '../components/blog-post.component';
+import Loader from '../components/Loader';
+import PostCard from '../components/BlogPost';
 import StoryCard from '../components/StoryCard';
-import UserCard from '../components/usercard.component';
+import UserCard from '../components/UserCard';
 import { Helmet } from 'react-helmet';
-import NoData from '../components/nodata.component';
+import NoData from '../components/NoData';
 
 const tabs = [
   { key: 'all', label: 'All' },
@@ -104,8 +104,8 @@ const SearchPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await axios.get(
-        `${import.meta.env.VITE_SERVER_DOMAIN}/search/${activeTab}`,
+      const { data } = await api.get(
+        `/search/${activeTab}`,
         { params: { q: debouncedQuery, page: 1 } }
       );
       if (!isMounted.current) return;
@@ -129,8 +129,8 @@ const SearchPage = () => {
     if (pagination.totalPages && nextPage > pagination.totalPages) return;
     setLoading(true);
     try {
-      const { data } = await axios.get(
-        `${import.meta.env.VITE_SERVER_DOMAIN}/search/${activeTab}`,
+      const { data } = await api.get(
+        `/search/${activeTab}`,
         { params: { q: debouncedQuery, page: nextPage } }
       );
       if (!isMounted.current) return;

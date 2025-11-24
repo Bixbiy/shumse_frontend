@@ -1,0 +1,103 @@
+@layer components {
+  /* Standardized Button Styles */
+
+  /* Primary Button - Main actions */
+  .btn-primary {
+    @apply px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium
+           hover:bg-indigo-700 active:bg-indigo-800
+           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-all duration-200;
+  }
+
+  /* Secondary Button - Alternative actions */
+  .btn-secondary {
+    @apply px-4 py-2 bg-gray-200 dark:bg-gray-700 
+           text-gray-900 dark:text-white rounded-lg font-medium
+           hover:bg-gray-300 dark:hover:bg-gray-600
+           active:bg-gray-400 dark:active:bg-gray-500
+           focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-all duration-200;
+  }
+
+  /* Danger Button - Destructive actions */
+  .btn-danger {
+    @apply px-4 py-2 bg-red-600 text-white rounded-lg font-medium
+           hover:bg-red-700 active:bg-red-800
+           focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-all duration-200;
+  }
+
+  /* Success Button */
+  .btn-success {
+    @apply px-4 py-2 bg-green-600 text-white rounded-lg font-medium
+           hover:bg-green-700 active:bg-green-800
+           focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-all duration-200;
+  }
+
+  /* Ghost Button - Minimal style */
+  .btn-ghost {
+    @apply px-4 py-2 text-gray-700 dark:text-gray-300 rounded-lg font-medium
+           hover:bg-gray-100 dark:hover:bg-gray-800
+           active:bg-gray-200 dark:active:bg-gray-700
+           focus:outline-none focus:ring-2 focus:ring-gray-400
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-all duration-200;
+  }
+
+  /* Icon Button - Circular button with icon only */
+  .btn-icon {
+    @apply w-10 h-10 flex items-center justify-center rounded-full
+           bg-gray-100 dark:bg-gray-800
+           hover:bg-gray-200 dark:hover:bg-gray-700
+           active:bg-gray-300 dark:active:bg-gray-600
+           focus:outline-none focus:ring-2 focus:ring-gray-400
+           transition-all duration-200;
+  }
+
+  /* Icon Button - Small */
+  .btn-icon-sm {
+    @apply w-8 h-8 flex items-center justify-center rounded-full
+           bg-gray-100 dark:bg-gray-800
+           hover:bg-gray-200 dark:hover:bg-gray-700
+           transition-all duration-200;
+  }
+
+  /* Link Button - Looks like a link */
+  .btn-link {
+    @apply text-indigo-600 dark:text-indigo-400 font-medium
+           hover:text-indigo-700 dark:hover:text-indigo-300
+           hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Size Variants */
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-lg;
+  }
+
+  /* Full Width */
+  .btn-full {
+    @apply w-full;
+  }
+
+  /* Loading State */
+  .btn-loading {
+    @apply relative pointer-events-none opacity-75;
+  }
+
+  .btn-loading::after {
+    content: '';
+    @apply absolute inset-0 flex items-center justify-center;
+    background: inherit;
+    border-radius: inherit;
+  }
+}
