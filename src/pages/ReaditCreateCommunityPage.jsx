@@ -3,17 +3,17 @@
  */
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { userContext } from '../App';
-import axiosInstance from '../common/api'; 
+import { UserContext } from '../App';
+import axiosInstance from '../common/api';
 import { Helmet } from 'react-helmet-async';
 import { UploadImage } from '../common/aws';
 import toast from 'react-hot-toast';
-import Loader from '../components/loader.component';
+import Loader from '../components/Loader';
 
 const ReaditCreateCommunityPage = () => {
     const navigate = useNavigate();
-    const { userAuth } = useContext(userContext);
-    
+    const { userAuth } = useContext(UserContext);
+
     const [formData, setFormData] = useState({
         name: '',
         title: '',
@@ -22,7 +22,7 @@ const ReaditCreateCommunityPage = () => {
     });
 
     const [uploading, setUploading] = useState(false);
-    const [isLoading, setIsLoading] = useState(false); 
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -39,8 +39,9 @@ const ReaditCreateCommunityPage = () => {
 
         setUploading(true);
         try {
-            const result = await UploadImage(file); 
+            const result = await UploadImage(file);
             setFormData(prev => ({ ...prev, icon: result })); // Assuming UploadImage returns the URL string
+
             toast.success('Icon uploaded!');
         } catch (error) {
             console.error(error);
@@ -52,7 +53,7 @@ const ReaditCreateCommunityPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!formData.name.trim() || !formData.title.trim()) {
             return toast.error('Community name and title are required');
         }
@@ -69,7 +70,7 @@ const ReaditCreateCommunityPage = () => {
                 ...formData,
                 name: formData.name.toLowerCase() // Ensure lowercase
             });
-            
+
             toast.success(`c/${formData.name} created!`);
             navigate(`/readit/c/${formData.name}`);
 
@@ -105,7 +106,7 @@ const ReaditCreateCommunityPage = () => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    
+
                     {/* NAME INPUT */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2">
@@ -167,8 +168,8 @@ const ReaditCreateCommunityPage = () => {
                         <div className="flex items-center gap-4">
                             <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden flex items-center justify-center border border-gray-200 dark:border-gray-600">
                                 {uploading ? <Loader /> : (
-                                    formData.icon ? <img src={formData.icon} className="w-full h-full object-cover" alt="Preview"/> 
-                                    : <i className="fi fi-rr-camera text-2xl text-gray-400"></i>
+                                    formData.icon ? <img src={formData.icon} className="w-full h-full object-cover" alt="Preview" />
+                                        : <i className="fi fi-rr-camera text-2xl text-gray-400"></i>
                                 )}
                             </div>
                             <label className="btn-light py-2 px-4 text-sm cursor-pointer">
@@ -180,16 +181,16 @@ const ReaditCreateCommunityPage = () => {
 
                     {/* ACTIONS */}
                     <div className="flex justify-end gap-3 pt-6 border-t border-gray-100 dark:border-gray-700">
-                        <button 
-                            type="button" 
-                            onClick={() => navigate(-1)} 
+                        <button
+                            type="button"
+                            onClick={() => navigate(-1)}
                             className="btn-light px-6 py-2"
                         >
                             Cancel
                         </button>
-                        <button 
-                            type="submit" 
-                            disabled={isLoading || uploading} 
+                        <button
+                            type="submit"
+                            disabled={isLoading || uploading}
                             className="btn-dark px-8 py-2"
                         >
                             {isLoading ? "Creating..." : "Create Community"}

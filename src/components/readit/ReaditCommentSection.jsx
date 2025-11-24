@@ -4,9 +4,10 @@
 import React, { useState, useEffect, useCallback, useRef, useContext } from 'react';
 import axiosInstance from '../../common/api';
 import ReaditCommentCard from './ReaditCommentCard';
-import Loader from '../loader.component';
+import Loader from '../Loader';
 import toast from 'react-hot-toast';
-import { userContext } from '../../App';
+import { UserContext } from '../../App';
+import { handleError } from '../../common/errorHandler';
 
 // --- INLINE MAIN COMMENT FIELD ---
 const ReaditMainCommentField = ({ postId, onCommentPosted }) => {
@@ -15,15 +16,14 @@ const ReaditMainCommentField = ({ postId, onCommentPosted }) => {
 
     const handleSubmit = async () => {
         if (!comment.trim()) return toast.error("Comment can't be empty");
-        
+
         setIsSubmitting(true);
         try {
             await axiosInstance.post(`/readit/posts/${postId}/comments`, { content: comment });
             setComment("");
             if (onCommentPosted) onCommentPosted();
         } catch (err) {
-            console.error("Failed to post comment:", err);
-            toast.error(err.response?.data?.error || "Failed to post comment.");
+            handleError(err, "Failed to post comment");
         } finally {
             setIsSubmitting(false);
         }
@@ -48,13 +48,13 @@ const ReaditMainCommentField = ({ postId, onCommentPosted }) => {
 
 // --- MAIN SECTION ---
 const ReaditCommentSection = ({ post, onCommentPosted }) => {
-    const { userAuth } = useContext(userContext);
+    const { userAuth } = useContext(UserContext);
     const [sort, setSort] = useState('top');
-    
+
     const [comments, setComments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
-    
+
     const page = useRef(1);
     const hasMore = useRef(true);
 
@@ -68,18 +68,17 @@ const ReaditCommentSection = ({ post, onCommentPosted }) => {
         setIsLoading(true);
         try {
             const { data } = await axiosInstance.get(`/readit/posts/${post._id}/comments?sort=${sort}&page=${page.current}&limit=10`);
-            
+
             if (isReset) {
                 setComments(data.comments || []);
             } else {
                 setComments(prev => [...prev, ...(data.comments || [])]);
             }
-            
+
             page.current += 1; // Prepare for next page
             hasMore.current = data.hasMore;
         } catch (err) {
-            console.error("Failed to fetch comments:", err);
-            toast.error("Failed to load comments.");
+            handleError(err, "Failed to load comments");
         } finally {
             setIsLoading(false);
         }
@@ -100,7 +99,7 @@ const ReaditCommentSection = ({ post, onCommentPosted }) => {
             page.current += 1;
             hasMore.current = data.hasMore;
         } catch (err) {
-            console.error("Failed to fetch more comments:", err);
+            handleError(err, "Failed to fetch more comments");
         } finally {
             setIsFetchingMore(false);
         }
@@ -122,7 +121,7 @@ const ReaditCommentSection = ({ post, onCommentPosted }) => {
                     <button onClick={() => setSort('new')} className={`text-xs px-3 py-1 rounded-full ${sort === 'new' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>New</button>
                 </div>
             </div>
-            
+
             {userAuth.access_token ? (
                 <ReaditMainCommentField postId={post._id} onCommentPosted={handleCommentPosted} />
             ) : (
@@ -136,10 +135,10 @@ const ReaditCommentSection = ({ post, onCommentPosted }) => {
                     <Loader />
                 ) : comments.length > 0 ? (
                     comments.map(comment => (
-                        <ReaditCommentCard 
-                            comment={comment} 
-                            postId={post._id} 
-                            key={comment._id} 
+                        <ReaditCommentCard
+                            comment={comment}
+                            postId={post._id}
+                            key={comment._id}
                         />
                     ))
                 ) : (
@@ -147,8 +146,8 @@ const ReaditCommentSection = ({ post, onCommentPosted }) => {
                 )}
 
                 {hasMore.current && !isLoading && (
-                    <button 
-                        onClick={fetchMoreComments} 
+                    <button
+                        onClick={fetchMoreComments}
                         disabled={isFetchingMore}
                         className="w-full py-2 text-sm font-medium text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >

@@ -1,0 +1,274 @@
+/**
+ * Design Tokens - Modern Color Palette
+ * 
+ * A trending, minimal, and eye-catching color system inspired by modern SaaS applications.
+ * Colors are carefully selected for:
+ * - Visual appeal and trendiness
+ * - Accessibility (WCAG AA compliance)
+ * - Dark mode compatibility
+ * - Professional yet vibrant feel
+ */
+
+:root {
+  /* ============================================
+     PRIMARY PALETTE - Deep Blue/Indigo
+     Professional, trustworthy, modern
+     ============================================ */
+  --color-primary-50: #f0f4ff;
+  --color-primary-100: #e0e9ff;
+  --color-primary-200: #c7d7fe;
+  --color-primary-300: #a5bbfc;
+  --color-primary-400: #8199f8;
+  --color-primary-500: #6172f3;
+  --color-primary-600: #4e5ce6;
+  --color-primary-700: #3f4dca;
+  --color-primary-800: #3642a3;
+  --color-primary-900: #2d3282;
+
+  /* ============================================
+     ACCENT PALETTE - Purple/Pink Gradient
+     Vibrant, modern, eye-catching
+     ============================================ */
+  --color-accent-50: #faf5ff;
+  --color-accent-100: #f3e8ff;
+  --color-accent-200: #e9d5ff;
+  --color-accent-300: #d8b4fe;
+  --color-accent-400: #c084fc;
+  --color-accent-500: #a855f7;
+  --color-accent-600: #9333ea;
+  --color-accent-700: #7e22ce;
+  --color-accent-800: #6b21a8;
+  --color-accent-900: #581c87;
+
+  /* ============================================
+     SECONDARY PALETTE - Emerald Green
+     Fresh, energetic, positive
+     ============================================ */
+  --color-secondary-50: #ecfdf5;
+  --color-secondary-100: #d1fae5;
+  --color-secondary-200: #a7f3d0;
+  --color-secondary-300: #6ee7b7;
+  --color-secondary-400: #34d399;
+  --color-secondary-500: #10b981;
+  --color-secondary-600: #059669;
+  --color-secondary-700: #047857;
+  --color-secondary-800: #065f46;
+  --color-secondary-900: #064e3b;
+
+  /* ============================================
+     NEUTRAL PALETTE - Sophisticated Grays
+     Clean, minimal, professional
+     ============================================ */
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+
+  /* ============================================
+     SEMANTIC COLORS
+     ============================================ */
+  --color-success-light: #d1fae5;
+  --color-success: #10b981;
+  --color-success-dark: #047857;
+
+  --color-warning-light: #fed7aa;
+  --color-warning: #f59e0b;
+  --color-warning-dark: #d97706;
+
+  --color-error-light: #fecaca;
+  --color-error: #ef4444;
+  --color-error-dark: #dc2626;
+
+  --color-info-light: #dbeafe;
+  --color-info: #3b82f6;
+  --color-info-dark: #1d4ed8;
+
+  /* ============================================
+     SURFACE COLORS - Light Mode
+     ============================================ */
+  --surface-primary: #ffffff;
+  --surface-secondary: var(--color-neutral-50);
+  --surface-tertiary: var(--color-neutral-100);
+  --surface-elevated: #ffffff;
+  --surface-overlay: rgba(0, 0, 0, 0.5);
+
+  /* ============================================
+     TEXT COLORS - Light Mode
+     ============================================ */
+  --text-primary: var(--color-neutral-900);
+  --text-secondary: var(--color-neutral-600);
+  --text-tertiary: var(--color-neutral-500);
+  --text-inverse: #ffffff;
+  --text-link: var(--color-primary-600);
+  --text-link-hover: var(--color-primary-700);
+
+  /* ============================================
+     BORDER COLORS
+     ============================================ */
+  --border-light: var(--color-neutral-200);
+  --border-medium: var(--color-neutral-300);
+  --border-strong: var(--color-neutral-400);
+  --border-focus: var(--color-primary-500);
+
+  /* ============================================
+     GRADIENTS - Modern & Trending
+     ============================================ */
+  --gradient-primary: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-500) 100%);
+  --gradient-accent: linear-gradient(135deg, var(--color-accent-600) 0%, var(--color-accent-400) 100%);
+  --gradient-vibrant: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-accent-500) 100%);
+  --gradient-success: linear-gradient(135deg, var(--color-secondary-600) 0%, var(--color-secondary-400) 100%);
+  --gradient-sunset: linear-gradient(135deg, #ff6b6b 0%, #ffa500 50%, #ffeb3b 100%);
+  --gradient-ocean: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+
+  /* ============================================
+     TYPOGRAPHY SCALE
+     ============================================ */
+  --font-size-xs: 0.75rem;      /* 12px */
+  --font-size-sm: 0.875rem;     /* 14px */
+  --font-size-base: 1rem;       /* 16px */
+  --font-size-lg: 1.125rem;     /* 18px */
+  --font-size-xl: 1.25rem;      /* 20px */
+  --font-size-2xl: 1.5rem;      /* 24px */
+  --font-size-3xl: 1.875rem;    /* 30px */
+  --font-size-4xl: 2.25rem;     /* 36px */
+  --font-size-5xl: 3rem;        /* 48px */
+  --font-size-6xl: 3.75rem;     /* 60px */
+
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+  --line-height-loose: 2;
+
+  /* ============================================
+     SPACING SCALE
+     ============================================ */
+  --space-0: 0;
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+  --space-20: 5rem;     /* 80px */
+  --space-24: 6rem;     /* 96px */
+
+  /* ============================================
+     BORDER RADIUS
+     ============================================ */
+  --radius-none: 0;
+  --radius-sm: 0.25rem;     /* 4px */
+  --radius-base: 0.5rem;    /* 8px */
+  --radius-md: 0.75rem;     /* 12px */
+  --radius-lg: 1rem;        /* 16px */
+  --radius-xl: 1.5rem;      /* 24px */
+  --radius-2xl: 2rem;       /* 32px */
+  --radius-full: 9999px;
+
+  /* ============================================
+     SHADOWS - Soft & Modern
+     ============================================ */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-2xl: 0 35px 60px -15px rgba(0, 0, 0, 0.3);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+  
+  /* Special Effect Shadows */
+  --shadow-glow-primary: 0 0 20px rgba(97, 114, 243, 0.3);
+  --shadow-glow-accent: 0 0 20px rgba(168, 85, 247, 0.3);
+
+  /* ============================================
+     TRANSITIONS
+     ============================================ */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* ============================================
+     Z-INDEX SCALE
+     ============================================ */
+  --z-base: 0;
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-fixed: 1200;
+  --z-modal-backdrop: 1300;
+  --z-modal: 1400;
+  --z-popover: 1500;
+  --z-tooltip: 1600;
+  --z-toast: 1700;
+
+  /* ============================================
+     MISC
+     ============================================ */
+  --blur-sm: 4px;
+  --blur-base: 8px;
+  --blur-md: 12px;
+  --blur-lg: 16px;
+  --blur-xl: 24px;
+}
+
+/* ============================================
+   DARK MODE OVERRIDES
+   ============================================ */
+.dark {
+  /* Surface Colors */
+  --surface-primary: var(--color-neutral-900);
+  --surface-secondary: var(--color-neutral-800);
+  --surface-tertiary: var(--color-neutral-700);
+  --surface-elevated: #1a1a1a;
+  --surface-overlay: rgba(0, 0, 0, 0.7);
+
+  /* Text Colors */
+  --text-primary: var(--color-neutral-50);
+  --text-secondary: var(--color-neutral-400);
+  --text-tertiary: var(--color-neutral-500);
+  --text-inverse: var(--color-neutral-900);
+  --text-link: var(--color-primary-400);
+  --text-link-hover: var(--color-primary-300);
+
+  /* Border Colors */
+  --border-light: var(--color-neutral-700);
+  --border-medium: var(--color-neutral-600);
+  --border-strong: var(--color-neutral-500);
+
+  /* Shadows - Softer in dark mode */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+  --shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  --shadow-2xl: 0 35px 60px -15px rgba(0, 0, 0, 0.7);
+}
+
+/* ============================================
+   UTILITY: Apply smooth color transitions
+   ============================================ */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}

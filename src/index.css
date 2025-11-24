@@ -1,14 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Gelasio&family=Inter:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Gelasio&family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "@flaticon/flaticon-uicons/css/all/all";
+
+/* Import Design Tokens and Utilities */
+@import "./styles/design-tokens.css";
+@import "./styles/utilities.css";
+@import "./styles/button-styles.css";
+@import "./styles/input-styles.css";
+@import "./styles/card-styles.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer components {
+    *:focus-visible {
+        @apply outline-2 outline-offset-2 outline-primary;
+    }
+
     * {
-        @apply m-0 p-0 box-border text-base outline-purple/30 duration-100;
-        
+        @apply m-0 p-0 box-border text-base duration-100;
     }
 
     html{
@@ -17,7 +27,6 @@
 
     body {
         @apply font-inter font-normal text-black;
-       
     }
 
     i {
@@ -29,7 +38,7 @@
     }
 
     ::selection {
-        @apply bg-purple/30;
+        @apply bg-primary/30;
     }
 
     img{
@@ -126,6 +135,7 @@
 .cdx-settings-button[data-tune='stretched'] {
   display: none;
 }
+
 .embed-responsive {
   position: relative;
   width: 100%;
@@ -141,6 +151,7 @@
   border: 0;
   border-radius: 8px;
 }
+
 html, body {
   transition: background-color 0.5s cubic-bezier(0.4,0,0.2,1), color 0.5s cubic-bezier(0.4,0,0.2,1);
 }

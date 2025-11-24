@@ -1,9 +1,10 @@
 /*
- * OPTIMIZED SocketContext.jsx - PREVENTS RE-RENDERS
+ * REFACTORED: SocketContext.jsx
+ * Fixes: Memory leaks, Race conditions, Redundant re-renders
  */
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useMemo } from 'react';
 import { io } from 'socket.io-client';
-import { userContext } from '../App';
+import { UserContext } from '../App';
 import toast from 'react-hot-toast';
 
 const SocketContext = createContext();
@@ -13,59 +14,71 @@ export const useSocket = () => {
 };
 
 export const SocketProvider = ({ children }) => {
-    const [socket, setSocket] = useState(null);
-    const { userAuth } = useContext(userContext);
-    const socketRef = useRef(null); // Use ref to prevent re-renders
+    const socketRef = useRef(null);
+    const { userAuth } = useContext(UserContext);
+    const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        // Only create socket once
-        if (socketRef.current) return;
+        // Create socket only once
+        if (!socketRef.current) {
+            console.log("🔄 Creating socket connection...");
+            const newSocket = io(import.meta.env.VITE_SERVER_DOMAIN, {
+                withCredentials: true,
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionAttempts: 5,
+                autoConnect: true
+            });
 
-        console.log("🔄 Creating socket connection...");
-        const newSocket = io(import.meta.env.VITE_SERVER_DOMAIN, {
-            withCredentials: true,
-        });
+            newSocket.on('connect', () => {
+                console.log("✅ Socket connected:", newSocket.id);
+                setIsConnected(true);
+            });
 
-        socketRef.current = newSocket;
+            newSocket.on('connect_error', (err) => {
+                console.error("❌ Socket connection error:", err.message);
+                setIsConnected(false);
+            });
 
-        newSocket.on('connect', () => {
-            console.log("✅ Socket connected:", newSocket.id);
-            setSocket(newSocket); // Only set state once when connected
-        });
+            newSocket.on('disconnect', () => {
+                console.log("🔌 Socket disconnected");
+                setIsConnected(false);
+            });
 
-        newSocket.on('connect_error', (err) => {
-            console.error("❌ Socket connection error:", err.message);
-        });
+            // Global listeners
+            newSocket.on('new_notification', () => {
+                toast('You have a new notification!', { icon: '🔔' });
+            });
 
-        newSocket.on('new_notification', (notification) => {
-            console.log('📢 New notification received');
-            toast('You have a new notification!', { icon: '🔔' });
-        });
-
-        newSocket.on('readitPostVoted', ({ postId, votes }) => {
-            console.log('👍 Post voted:', postId);
-        });
-        
-        newSocket.on('newReaditComment', (comment) => {
-            console.log('💬 New comment received');
-        });
-
-        // Join notification room when user logs in
-        if (userAuth?.id) {
-            newSocket.emit('joinNotificationRoom', { userId: userAuth.id });
+            socketRef.current = newSocket;
         }
 
         return () => {
-            console.log("🔌 Disconnecting socket...");
             if (socketRef.current) {
+                console.log("🔌 Disconnecting socket...");
                 socketRef.current.disconnect();
                 socketRef.current = null;
             }
         };
-    }, []); // Empty dependency array - only run once
+    }, []);
+
+    // Separate effect for user-specific room joining
+    useEffect(() => {
+        const socket = socketRef.current;
+        if (socket && isConnected && userAuth?.id) {
+            console.log(`Joining notification room for user: ${userAuth.id}`);
+            socket.emit('joinNotificationRoom', { userId: userAuth.id });
+        }
+    }, [userAuth?.id, isConnected]);
+
+    // Memoize value to prevent context re-renders
+    const value = useMemo(() => ({
+        socket: socketRef.current,
+        isConnected
+    }), [isConnected]);
 
     return (
-        <SocketContext.Provider value={{ socket }}>
+        <SocketContext.Provider value={value}>
             {children}
         </SocketContext.Provider>
     );

@@ -4,12 +4,12 @@
 import React, { Suspense } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useReaditPost } from '../hooks/useReaditApi';
-import { Helmet } from 'react-helmet-async';
-import Loader from '../components/loader.component';
+import Loader from '../components/Loader';
 import VoteButtons from '../components/readit/VoteButtons';
 import ReaditCommentSection from '../components/readit/ReaditCommentSection';
 import { getDay } from '../common/date';
-import ReactMarkdown from 'react-markdown'; 
+import ReactMarkdown from 'react-markdown';
+import SEO from '../common/seo';
 
 const ErrorDisplay = () => (
     <div className="flex flex-col items-center justify-center h-[50vh] text-center">
@@ -59,17 +59,43 @@ const ReaditPostPage = () => {
 
     return (
         <div className="max-w-4xl mx-auto p-2 md:p-6">
-            <Helmet>
-                <title>{title} | Readit</title>
-                <meta name="description" content={content?.substring(0, 150) || title} />
-            </Helmet>
+            <SEO
+                title={`${title} | Readit`}
+                description={content?.substring(0, 150) || title}
+                image={image || community?.icon}
+                type="article"
+                schema={{
+                    "@context": "https://schema.org",
+                    "@type": "DiscussionForumPosting",
+                    "headline": title,
+                    "text": content,
+                    "image": image,
+                    "datePublished": createdAt,
+                    "author": {
+                        "@type": "Person",
+                        "name": author?.personal_info?.username
+                    },
+                    "interactionStatistic": [
+                        {
+                            "@type": "InteractionCounter",
+                            "interactionType": "https://schema.org/LikeAction",
+                            "userInteractionCount": votes
+                        },
+                        {
+                            "@type": "InteractionCounter",
+                            "interactionType": "https://schema.org/CommentAction",
+                            "userInteractionCount": commentCount
+                        }
+                    ]
+                }}
+            />
 
             {/* Post Container */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="flex">
                     {/* Sidebar Vote */}
                     <div className="w-12 bg-gray-50 dark:bg-gray-800/50 border-r border-gray-100 dark:border-gray-700 pt-4">
-                         <VoteButtons item={post} />
+                        <VoteButtons item={post} />
                     </div>
 
                     {/* Content Area */}
@@ -78,7 +104,7 @@ const ReaditPostPage = () => {
                         <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-4 flex-wrap">
                             <Link to={`/readit/c/${community?.name}`} className="flex items-center gap-1 font-bold text-black dark:text-white hover:underline">
                                 {community?.icon && (
-                                    <img src={community.icon} alt="" className="w-5 h-5 rounded-full object-cover"/>
+                                    <img src={community.icon} alt="" className="w-5 h-5 rounded-full object-cover" />
                                 )}
                                 c/{community?.name}
                             </Link>
@@ -90,14 +116,14 @@ const ReaditPostPage = () => {
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
                             {title}
                         </h1>
-                        
+
                         <div className="mb-6">
                             {renderPostContent()}
                         </div>
 
                         {/* Footer Actions */}
                         <div className="flex items-center text-gray-500 text-sm font-bold gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                             <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-lg">
+                            <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-lg">
                                 <i className="fi fi-rr-comment-alt"></i>
                                 {commentCount} Comments
                             </div>

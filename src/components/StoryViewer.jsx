@@ -3,13 +3,13 @@ import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSwipeable } from 'react-swipeable';
-import axios from 'axios';
+import api from '../common/api';
 import { FiX, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-lazy-load-image-component/src/effects/blur.css';
 import 'react-toastify/dist/ReactToastify.css';
-import Loader from './loader.component';
+import Loader from './Loader';
 
 const modalRoot = (() => {
   const existing = document.getElementById('modal-root');
@@ -43,7 +43,7 @@ export default function StoryViewerModal() {
   // Fetch story with error handling
   useEffect(() => {
     setLoading(true);
-    axios.get(`${import.meta.env.VITE_SERVER_DOMAIN}/story/${story_id}`)
+    api.get(`/story/${story_id}`)
       .then(({ data }) => {
         setStory(data);
       })

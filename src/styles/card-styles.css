@@ -1,0 +1,126 @@
+@layer components {
+  /* Standardized Card Component Styles */
+
+  /* Base Card */
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm
+           border border-gray-200 dark:border-gray-700
+           transition-shadow duration-200;
+  }
+
+  /* Interactive Card (Clickable/Hoverable) */
+  .card-interactive {
+    @apply card hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600
+           cursor-pointer transition-all duration-200;
+  }
+
+  /* Card with Padding */
+  .card-padded {
+    @apply card p-4;
+  }
+
+  .card-padded-lg {
+    @apply card p-6;
+  }
+
+  /* Blog Post Card */
+  .card-blog {
+    @apply card-interactive overflow-hidden;
+  }
+
+  .card-blog:hover {
+    @apply transform -translate-y-0.5;
+  }
+
+  /* Comment Card */
+  .card-comment {
+    @apply bg-white dark:bg-gray-800 rounded-lg p-3
+           border border-gray-100 dark:border-gray-700 shadow-sm;
+  }
+
+  /* Profile Card */
+  .card-profile {
+    @apply card overflow-hidden;
+  }
+
+  /* Stats Card */
+  .card-stats {
+    @apply card-padded text-center;
+  }
+
+  /* Card Header */
+  .card-header {
+    @apply px-4 py-3 border-b border-gray-200 dark:border-gray-700
+           font-medium text-gray-900 dark:text-white;
+  }
+
+  /* Card Body */
+  .card-body {
+    @apply p-4;
+  }
+
+  /* Card Footer */
+  .card-footer {
+    @apply px-4 py-3 border-t border-gray-200 dark:border-gray-700
+           bg-gray-50 dark:bg-gray-900/50;
+  }
+
+  /* Card with Image */
+  .card-with-image {
+    @apply card overflow-hidden;
+  }
+
+  .card-image {
+    @apply w-full h-48 object-cover;
+  }
+
+  /* Elevated Card (More prominent) */
+  .card-elevated {
+    @apply card shadow-md;
+  }
+
+  .card-elevated:hover {
+    @apply shadow-lg;
+  }
+
+  /* Bordered Card (No shadow) */
+  .card-bordered {
+    @apply bg-white dark:bg-gray-800 rounded-lg
+           border-2 border-gray-200 dark:border-gray-700;
+  }
+
+  /* Card Variants by Color */
+  .card-primary {
+    @apply card border-indigo-200 dark:border-indigo-700
+           bg-indigo-50 dark:bg-indigo-900/20;
+  }
+
+  .card-success {
+    @apply card border-green-200 dark:border-green-700
+           bg-green-50 dark:bg-green-900/20;
+  }
+
+  .card-warning {
+    @apply card border-yellow-200 dark:border-yellow-700
+           bg-yellow-50 dark:bg-yellow-900/20;
+  }
+
+  .card-danger {
+    @apply card border-red-200 dark:border-red-700
+           bg-red-50 dark:bg-red-900/20;
+  }
+
+  /* Compact Card */
+  .card-compact {
+    @apply card p-2;
+  }
+
+  /* Loading Card Skeleton */
+  .card-skeleton {
+    @apply card-padded animate-pulse;
+  }
+
+  .card-skeleton-content {
+    @apply h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2;
+  }
+}
