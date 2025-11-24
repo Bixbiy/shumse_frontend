@@ -4,10 +4,10 @@
  */
 import React, { useState, useContext, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { userContext } from '../App';
+import { UserContext } from '../App';
 import { Helmet } from 'react-helmet-async';
 import { useQueryClient } from '@tanstack/react-query';
-import InPageNavigation from '../components/inpage-navigation.component';
+import InPageNavigation from '../components/InPageNavigation';
 import { UploadImage } from '../common/aws'; // Using your existing uploader
 import toast from 'react-hot-toast';
 import axios from 'axios';
@@ -18,7 +18,7 @@ const API_DOMAIN = import.meta.env.VITE_SERVER_DOMAIN + "/api/v1/readit";
 // For brevity, I'll define it here, but it should be moved to your hook file.
 const useCreateReaditPost = () => {
     const queryClient = useQueryClient();
-    const { userAuth } = useContext(userContext);
+    const { userAuth } = useContext(UserContext);
 
     return useMutation({
         mutationFn: ({ communityName, postData }) =>
