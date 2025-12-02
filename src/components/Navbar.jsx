@@ -7,7 +7,7 @@ import { LazyMotion, domAnimation, motion, AnimatePresence } from "framer-motion
 import { useDebounce } from "use-debounce";
 import ThemeToggleButton from "./ThemeToggleButton";
 import OptimizedImage from "./OptimizedImage";
-
+import site_logo from "../../public/readit.png"
 const preloadAssets = () => {
   const link = document.createElement('link');
   link.rel = 'preload';
@@ -21,7 +21,7 @@ const Navbar = () => {
   const { userAuth, setUserAuth } = useContext(UserContext);
   const { access_token, profile_img, new_notification_available } = userAuth || {};
 
-  const site_logo = "/logo.png";
+  
 
   const [searchBoxVisibility, setSearchBoxVisibility] = useState(false);
   const [userNavPanel, setUserNavPanel] = useState(false);
@@ -153,7 +153,8 @@ const Navbar = () => {
           >
             {/* Logo */}
             <Link to="/" className="w-12 block flex-none">
-              <OptimizedImage src={site_logo} className="w-full" alt="Logo" />
+            <h1 className=" md:flex gap-2 items-center px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white rounded-full text-sm font-large shadow-sm hover:shadow-md transition-all transform hover:-translate-y-0.5">Read</h1>
+            {/* <img src={site_logo} alt="Readit" className="w-cover" /> */}
             </Link>
 
             {/* Desktop Search Bar Container */}
@@ -296,7 +297,7 @@ const Navbar = () => {
                     type="search"
                     placeholder="Search..."
                     ref={mobileSearchRef}
-                    className="w-full bg-gray-100 dark:bg-grey border border-gray-200 dark:border-grey rounded-full py-3 px-6 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full bg-gray-100 dark:bg-grey dark:border  border border-gray-200 dark:border-gray-200 dark:rounded-full rounded-full py-3 px-6 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     value={searchQuery}
                     onChange={handleSearchChange}
                     onKeyDown={handleSearchEnter}
@@ -309,7 +310,7 @@ const Navbar = () => {
           </AnimatePresence>
         </div>
       </LazyMotion>
-      <div id="main-content" className="mt-[61px] min-h-screen focus:outline-none" tabIndex="-1"><Outlet /></div>
+      <div id="main-content" className="  focus:outline-none" tabIndex="-1"><Outlet /></div>
     </>
   );
 };

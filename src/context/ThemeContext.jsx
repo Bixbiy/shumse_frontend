@@ -13,22 +13,50 @@ export const ThemeProvider = ({ children }) => {
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
         setSystemPrefersDark(prefersDark);
-        setTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+        const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+        setTheme(initialTheme);
         setMounted(true);
 
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        const handler = (e) => setSystemPrefersDark(e.matches);
+        const handler = (e) => {
+            setSystemPrefersDark(e.matches);
+            // Only auto-switch if user hasn't manually set preference
+            if (!localStorage.getItem('theme')) {
+                setTheme(e.matches ? 'dark' : 'light');
+            }
+        };
         mediaQuery.addEventListener('change', handler);
 
         return () => mediaQuery.removeEventListener('change', handler);
     }, []);
 
-    // Apply theme to document
+    // Apply theme to document with smooth transition
     useEffect(() => {
         if (mounted) {
-            document.documentElement.classList.remove('light', 'dark');
-            document.documentElement.classList.add(theme);
+            const root = document.documentElement;
+
+            // Remove both classes first
+            root.classList.remove('light', 'dark');
+
+            // Add new theme class
+            root.classList.add(theme);
+
+            // Update meta theme-color for mobile browsers
+            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute('content', theme === 'dark' ? '#0f172a' : '#ffffff');
+            } else {
+                const meta = document.createElement('meta');
+                meta.name = 'theme-color';
+                meta.content = theme === 'dark' ? '#0f172a' : '#ffffff';
+                document.head.appendChild(meta);
+            }
+
+            // Save to localStorage
             localStorage.setItem('theme', theme);
+
+            // Set color-scheme for native browser controls
+            root.style.colorScheme = theme;
         }
     }, [theme, mounted]);
 
@@ -36,7 +64,9 @@ export const ThemeProvider = ({ children }) => {
         theme,
         systemPrefersDark,
         toggleTheme: () => setTheme(prev => prev === 'dark' ? 'light' : 'dark'),
-        setTheme
+        setTheme,
+        isDark: theme === 'dark',
+        isLight: theme === 'light',
     }), [theme, systemPrefersDark]);
 
     return (

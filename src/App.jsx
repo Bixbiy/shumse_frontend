@@ -11,6 +11,7 @@ import { lookInSession } from "./common/session";
 import { setAuthToken } from "./common/api";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import AppLayout from "./components/layout/AppLayout";
 import RouteErrorBoundary from "./components/RouteErrorBoundary";
 import SideNav from "./components/SideNav";
 import UserAuthForm from "./pages/userAuthForm.page";
@@ -108,9 +109,9 @@ const App = () => {
                             <Suspense fallback={<LoadingFallback />}>
                                 <RouteErrorBoundary>
                                     <Routes>
-                                        {/* Routes WITH Navbar & Footer */}
-                                        <Route path="/" element={<><Navbar /><Footer /></>}>
-                                            <Route index element={<HomePage />} />
+                                        {/* Routes WITH AppLayout (Navbar/BottomNav) */}
+                                       
+                                            <Route index element={<><Navbar/><HomePage /><Footer/></>} />
                                             <Route path="contact" element={<ContactPage />} />
                                             <Route path="search/:search_query" element={<SearchPage />} />
                                             <Route path="search/tag/:search_query" element={<SearchPage />} />
@@ -134,7 +135,7 @@ const App = () => {
                                             </Route>
 
                                             <Route path="*" element={<NotFound />} />
-                                        </Route>
+                                        
 
                                         {/* Dashboard Routes */}
                                         <Route path="/dashboard" element={<SideNav />}>

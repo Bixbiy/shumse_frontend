@@ -184,7 +184,7 @@ const retryRequest = async (fn, config) => {
 // ============================================================================
 
 const api = axios.create({
-    baseURL: `${import.meta.env.VITE_SERVER_DOMAIN}/api/v1`,
+    baseURL: `/api/v1`,
 });
 
 // Request interceptor - adds auth token

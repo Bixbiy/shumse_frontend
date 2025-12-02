@@ -7,58 +7,46 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
-        // Modern Design Token Colors
+        colors: {
+        // Modern Slate Palette
         primary: {
-          50: '#f0f4ff',
-          100: '#e0e9ff',
-          200: '#c7d7fe',
-          300: '#a5bbfc',
-          400: '#8199f8',
-          500: '#6172f3',
-          600: '#4e5ce6',
-          700: '#3f4dca',
-          800: '#3642a3',
-          900: '#2d3282',
-          DEFAULT: '#6172f3',
-        },
-        accent: {
-          50: '#faf5ff',
-          100: '#f3e8ff',
-          200: '#e9d5ff',
-          300: '#d8b4fe',
-          400: '#c084fc',
-          500: '#a855f7',
-          600: '#9333ea',
-          700: '#7e22ce',
-          800: '#6b21a8',
-          900: '#581c87',
-          DEFAULT: '#a855f7',
-        },
-        secondary: {
           50: '#ecfdf5',
           100: '#d1fae5',
           200: '#a7f3d0',
           300: '#6ee7b7',
           400: '#34d399',
-          500: '#10b981',
+          500: '#10b981', // Emerald 500
           600: '#059669',
           700: '#047857',
           800: '#065f46',
           900: '#064e3b',
           DEFAULT: '#10b981',
         },
+        secondary: {
+          50: '#f0f9ff',
+          100: '#e0f2fe',
+          200: '#bae6fd',
+          300: '#7dd3fc',
+          400: '#38bdf8',
+          500: '#0ea5e9', // Sky 500
+          600: '#0284c7',
+          700: '#0369a1',
+          800: '#075985',
+          900: '#0c4a6e',
+          DEFAULT: '#0ea5e9',
+        },
         neutral: {
-          50: '#fafafa',
-          100: '#f5f5f5',
-          200: '#e5e5e5',
-          300: '#d4d4d4',
-          400: '#a3a3a3',
-          500: '#737373',
-          600: '#525252',
-          700: '#404040',
-          800: '#262626',
-          900: '#171717',
+          50: '#f8fafc',
+          100: '#f1f5f9',
+          200: '#e2e8f0',
+          300: '#cbd5e1',
+          400: '#94a3b8',
+          500: '#64748b',
+          600: '#475569',
+          700: '#334155',
+          800: '#1e293b',
+          900: '#0f172a', // Slate 900
+          950: '#020617',
         },
         // Semantic colors
         success: {
@@ -77,20 +65,20 @@ export default {
           dark: '#dc2626',
         },
         info: {
-          light: '#dbeafe',
-          DEFAULT: '#3b82f6',
-          dark: '#1d4ed8',
+          light: '#e0f2fe',
+          DEFAULT: '#0ea5e9',
+          dark: '#0369a1',
         },
-        // Legacy colors for backward compatibility
-        white: '#FFFFFF',
-        black: '#242424',
-        grey: '#F3F3F3',
-        'dark-grey': '#6B6B6B',
-        red: '#FF4E4E',
+        // Legacy colors for backward compatibility (mapped to new palette where possible)
+        white: '#ffffff',
+        black: '#0f172a', // Mapped to Slate 900
+        grey: '#1e293b',   // Mapped to Slate 800 (Card bg)
+        'dark-grey': '#94a3b8', // Mapped to Slate 400
+        red: '#ef4444',
         transparent: 'transparent',
         twitter: '#1DA1F2',
         purple: '#8B46FF',
-        'c-green': '#6fcb9f',
+        'c-green': '#10b981',
       },
       fontSize: {
         xs: ['0.75rem', { lineHeight: '1.25' }],      // 12px

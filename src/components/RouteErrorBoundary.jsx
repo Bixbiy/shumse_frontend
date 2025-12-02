@@ -157,8 +157,8 @@ const ErrorFallback = ({ error, errorInfo, errorCount, onReset }) => {
                     <div className="mt-8 pt-8 border-t border-neutral-200 dark:border-neutral-700">
                         <p className="text-sm text-neutral-500 dark:text-neutral-400">
                             Need help? Contact our support team at{' '}
-                            <a href="mailto:support@example.com" className="text-primary-600 hover:underline">
-                                support@example.com
+                            <a href="mailto:buyshumse@gmail.com" className="text-primary-600 hover:underline">
+                                buyshumse@gmail.com
                             </a>
                         </p>
                     </div>

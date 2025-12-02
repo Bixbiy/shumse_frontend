@@ -1,12 +1,12 @@
 // ── src/pages/HomePage.jsx ──
-// Fully refactored for performance, error handling, and real-time updates.
+// Mobile-first refactored with Modern Slate design system
 
-import React, { useEffect, useState, useCallback, useContext } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { throttle } from 'lodash';
+import { motion } from 'framer-motion';
 
-
-import { useSocket } from '../context/SocketContext'; // Import the custom hook
-import api from "../common/api"; // Import the new API instance
+import { useSocket } from '../context/SocketContext';
+import api from "../common/api";
 import AnimationWrapper from "../common/page-animation";
 import InPageNavigation from '../components/InPageNavigation';
 import Loader from "../components/Loader";
@@ -15,77 +15,57 @@ import MinimalPostCard from '../components/NoBannerBlogPost';
 import NoDATA from '../components/NoData';
 import AdSection from '../components/AdSection';
 import SEO from "../common/seo";
-
-// --- New Components for UI/UX ---
 import PostCardSkeleton from '../components/PostCardSkeleton';
 import MinimalPostCardSkeleton from '../components/MinimalPostCardSkeleton';
 import ErrorDisplay from '../components/ErrorDisplay';
 
-// --- Helper Functions for Live Updates ---
+// Helper Functions
 const updateBlogLikes = (state, blog_id, total_likes) => {
     if (!state) return null;
-
-    // Check if it's the 'blogs' object or 'trendingBlogs' array
     const results = state.results ? state.results : state;
-
-    const updatedResults = results.map(blog => {
-        if (blog.blog_id === blog_id) {
-            return { ...blog, activity: { ...blog.activity, total_likes } };
-        }
-        return blog;
-    });
-
+    const updatedResults = results.map(blog =>
+        blog.blog_id === blog_id
+            ? { ...blog, activity: { ...blog.activity, total_likes } }
+            : blog
+    );
     return state.results ? { ...state, results: updatedResults } : updatedResults;
 };
 
 const filterOutBlog = (state, blog_id) => {
     if (!state) return null;
-
     const results = state.results ? state.results : state;
     const updatedResults = results.filter(blog => blog.blog_id !== blog_id);
-
     return state.results ? { ...state, results: updatedResults } : updatedResults;
 };
 
-// --- HomePage Component ---
 const HomePage = () => {
-    const [blogs, setBlogs] = useState(null); // { results: [], page: 1, totalDocs: 0 }
+    const [blogs, setBlogs] = useState(null);
     const [trendingBlogs, setTrendingBlogs] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [pageTitle, setPageTitle] = useState("Home");
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
-    const [error, setError] = useState(null); // For error handling
+    const [error, setError] = useState(null);
+    const { socket } = useSocket();
 
-    const { socket } = useSocket(); // Get socket from context
-
-    // 1. REFACTORED: Central blog fetching function
     const fetchBlogs = useCallback(async (category, page = 1) => {
         setLoading(true);
-        if (page === 1) {
-            setError(null); // Clear error on a new load
-        }
+        if (page === 1) setError(null);
 
         const isNewCategory = (category !== selectedCategory);
         const currentPage = isNewCategory ? 1 : page;
-
-        // Setup API call
         let endpoint = category ? '/category-find' : '/latest-posts';
         let payload = { page: currentPage };
         if (category) payload.tag = category;
 
         try {
-            // FIX (N+1): Call the new 'api' instance.
-            // It now returns { blogs, totalDocs } in ONE request.
             const { data } = await api.post(endpoint, payload);
             const { blogs: newBlogs, totalDocs } = data;
 
-            // FIX: Pagination logic is now simple and inside the component
             setBlogs(prev => {
                 if (isNewCategory || currentPage === 1) {
                     return { results: newBlogs, page: 1, totalDocs };
                 } else {
-                    // Append new blogs
                     return {
                         ...prev,
                         results: [...prev.results, ...newBlogs],
@@ -97,97 +77,73 @@ const HomePage = () => {
             setHasMore(currentPage * 5 < totalDocs);
             setPageTitle(category || "Home");
             setSelectedCategory(category);
-
         } catch (err) {
             console.error("Error fetching posts:", err);
             setError("Failed to load posts. Please check your connection.");
         } finally {
             setLoading(false);
         }
-    }, [selectedCategory]); // Add selectedCategory as dependency
+    }, [selectedCategory]);
 
-    // 2. REFACTORED: Fetch trending posts with error handling
     const fetchTrendingPosts = useCallback(async () => {
         try {
             const { data } = await api.get('/trending-posts');
             setTrendingBlogs(data.trendingPosts);
         } catch (err) {
             console.error("Error fetching trending posts:", err);
-            // Non-critical, so we don't set a page-wide error
         }
     }, []);
 
-    // 3. REFACTORED: Category click handler
     const loadPostByCat = (e) => {
-        const category = e.target.innerText;
-
+        const category = e.target.innerText.trim();
         if (selectedCategory === category) {
-            // Clicked active category, reset to Home
-            setBlogs(null); // Show skeleton
+            setBlogs(null);
             fetchBlogs(null, 1);
         } else {
-            // Clicked new category
-            setBlogs(null); // Show skeleton
+            setBlogs(null);
             fetchBlogs(category, 1);
         }
     };
 
-    // 4. FIX (Double Fetch): Simplified initial load effect
     useEffect(() => {
-        fetchBlogs(null, 1); // Fetch initial posts (Home)
+        fetchBlogs(null, 1);
         fetchTrendingPosts();
-    }, []); // Eslint prefers this
+    }, []);
 
-    // 5. REFACTORED (Performance): Throttled infinite scroll
     useEffect(() => {
         const handleScroll = () => {
             const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
             const atBottom = scrollTop + clientHeight >= scrollHeight - 150;
 
             if (atBottom && !loading && hasMore && blogs) {
-                if (pageTitle === "Home") {
-                    fetchBlogs(null, blogs.page + 1);
-                } else {
-                    fetchBlogs(pageTitle, blogs.page + 1);
-                }
+                fetchBlogs(pageTitle === "Home" ? null : pageTitle, blogs.page + 1);
             }
         };
 
-        // Add throttle
         const throttledScrollHandler = throttle(handleScroll, 300);
         window.addEventListener('scroll', throttledScrollHandler);
-
         return () => window.removeEventListener('scroll', throttledScrollHandler);
     }, [blogs, loading, hasMore, pageTitle, fetchBlogs]);
 
-    // 6. NEW (Advanced): Socket.io listeners for real-time updates
     useEffect(() => {
-        if (!socket) return; // Wait for socket connection
+        if (!socket) return;
 
-        // Listen for like updates
         socket.on('listLikeUpdate', ({ blog_id, total_likes }) => {
             setBlogs(prev => updateBlogLikes(prev, blog_id, total_likes));
             setTrendingBlogs(prev => updateBlogLikes(prev, blog_id, total_likes));
         });
 
-        // Listen for new posts
         socket.on('newPost', (newPost) => {
-            // Only add to "Home" feed
             if (pageTitle === "Home") {
-                setBlogs(prev => ({
-                    ...prev,
-                    results: [newPost, ...prev.results]
-                }));
+                setBlogs(prev => ({ ...prev, results: [newPost, ...prev.results] }));
             }
         });
 
-        // Listen for deleted posts
         socket.on('postDeleted', ({ blog_id }) => {
             setBlogs(prev => filterOutBlog(prev, blog_id));
             setTrendingBlogs(prev => filterOutBlog(prev, blog_id));
         });
 
-        // Clean up listeners
         return () => {
             socket.off('listLikeUpdate');
             socket.off('newPost');
@@ -197,9 +153,6 @@ const HomePage = () => {
 
     const Categories = ["Technology", "Science", "Health", "Business", "Entertainment", "Sports", "Travel", "Lifestyle", "Fashion", "Food", "Education", "Politics", "Environment", "Art", "Music", "Movies", "Books", "Gaming", "History"];
 
-    // --- Render Logic ---
-
-    // Show main error state
     if (!blogs && !loading && error) {
         return <ErrorDisplay message={error} onRetry={() => fetchBlogs(selectedCategory, 1)} />;
     }
@@ -222,90 +175,141 @@ const HomePage = () => {
                 title={pageTitle === "Home" ? "Home" : `${pageTitle} Blogs`}
                 schema={websiteSchema}
             />
-            <section className="min-h-screen flex gap-10 pt-6">
-                {/* Left Section - Blog Posts */}
-                <div className="w-full">
-                    <InPageNavigation key={pageTitle} routes={[pageTitle, "Trending Posts"]} defaultHidden={["Trending Posts"]}>
 
-                        {/* Tab 1: Latest/Category Posts */}
-                        <div id="blog-section" className="pt-4">
-                            {
-                                // Show skeletons on first load or category change
-                                blogs === null ? (
-                                    [...Array(3)].map((_, i) => <PostCardSkeleton key={i} />)
-                                ) : (
-                                    blogs.results.length ?
-                                        blogs.results.map((blog, i) => (
-                                            <React.Fragment key={i}>
-                                                <AnimationWrapper transition={{ duration: 1, delay: i * 0.1 }}>
-                                                    {/* Pass author object directly, PostCard handles it */}
-                                                    <PostCard content={blog} author={blog.authorId} />
-                                                </AnimationWrapper>
-                                                {(i + 1) % 3 === 0 && <AdSection key={`ad-${i}`} />}
-                                            </React.Fragment>
-                                        ))
-                                        : <NoDATA />
-                                )
-                            }
-                            {loading && <div className="flex justify-center items-center w-full h-20"><Loader /></div>}
-                        </div>
+            {/* Mobile-First Container */}
+            <section className="min-h-screen px-4 md:px-6 lg:px-8 pt-6 pb-20 md:pb-6 max-w-screen-2xl mx-auto">
 
-                        {/* Tab 2: Trending Posts */}
-                        <div className="pt-4">
-                            {
-                                trendingBlogs === null ? (
-                                    [...Array(5)].map((_, i) => <MinimalPostCardSkeleton key={i} />)
-                                ) : (
-                                    trendingBlogs.length ?
-                                        trendingBlogs.map((blog, i) => (
-                                            <AnimationWrapper transition={{ duration: 1, delay: i * 0.1 }} key={i}>
-                                                <MinimalPostCard blog={blog} index={i} />
-                                            </AnimationWrapper>
-                                        ))
-                                        : <NoDATA />
-                                )
-                            }
-                        </div>
-                    </InPageNavigation>
+                {/* Mobile Category Horizontal Scroll */}
+                <div className="md:hidden mb-6 overflow-x-auto scrollbar-hide -mx-4 px-4">
+                    <div className="flex gap-2 min-w-max pb-2">
+                        <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                                setBlogs(null);
+                                fetchBlogs(null, 1);
+                            }}
+                            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${!selectedCategory
+                                    ? "bg-primary text-white shadow-lg shadow-primary/30"
+                                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
+                                }`}
+                        >
+                            All
+                        </motion.button>
+                        {Categories.slice(0, 12).map((category, i) => (
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                onClick={loadPostByCat}
+                                key={i}
+                                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${selectedCategory === category
+                                        ? "bg-primary text-white shadow-lg shadow-primary/30"
+                                        : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
+                                    }`}
+                            >
+                                {category}
+                            </motion.button>
+                        ))}
+                    </div>
                 </div>
 
-                {/* Right Section - Filters & Trending Blogs */}
-                <div className="min-w-[350px] lg:min-w-[400px] max-w-[400px] flex-shrink-0 pl-8 pt-3 hidden md:block transition-all duration-500">
-                    <div className="flex flex-col gap-5">
-                        <h1 className="font-medium text-xl mb-4">Suggested Categories</h1>
-                        <div className="flex flex-wrap gap-2">
-                            {Categories.map((category, i) => (
-                                <button
-                                    onClick={loadPostByCat}
-                                    key={i}
-                                    className={`btn-light font-roboto font-light py-2 px-4 transition-all duration-300 bg-white text-black dark:bg-[#18181b] dark:text-white ${selectedCategory === category
-                                        ? "bg-black dark:bg-white dark:text-dark scale-105 shadow-lg"
-                                        : "hover:bg-gray-200"
-                                        }`}
-                                >
-                                    {category}
-                                </button>
-                            ))}
-                        </div>
-                        <div>
-                            <h1 className="font-medium text-xl mb-8">Trending <i className="fi fi-rs-arrow-trend-up text-xl"></i></h1>
-                            {
-                                // Re-use the same skeleton/data logic
-                                trendingBlogs === null ? (
-                                    [...Array(3)].map((_, i) => <MinimalPostCardSkeleton key={i} />)
-                                ) : (
-                                    trendingBlogs.length ?
-                                        // Show top 3
-                                        trendingBlogs.slice(0, 3).map((blog, i) => (
-                                            <AnimationWrapper transition={{ duration: 1, delay: i * 0.1 }} key={i}>
-                                                <MinimalPostCard blog={blog} index={i} />
-                                            </AnimationWrapper>
-                                        ))
-                                        : <NoDATA />
-                                )
-                            }
-                        </div>
+                {/* Main Grid: Mobile 1 col, Desktop 2 cols (70/30) */}
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
+
+                    {/* Left: Blog Feed */}
+                    <div className="w-full">
+                        <InPageNavigation key={pageTitle} routes={[pageTitle, "Trending Posts"]} defaultHidden={["Trending Posts"]}>
+
+                            {/* Tab 1: Latest/Category Posts */}
+                            <div id="blog-section" className="space-y-6">
+                                {
+                                    blogs === null ? (
+                                        [...Array(3)].map((_, i) => <PostCardSkeleton key={i} />)
+                                    ) : (
+                                        blogs.results.length ?
+                                            blogs.results.map((blog, i) => (
+                                                <React.Fragment key={i}>
+                                                    <AnimationWrapper transition={{ duration: 0.5, delay: i * 0.05 }}>
+                                                        <PostCard content={blog} author={blog.authorId} />
+                                                    </AnimationWrapper>
+                                                    {(i + 1) % 3 === 0 && <AdSection key={`ad-${i}`} />}
+                                                </React.Fragment>
+                                            ))
+                                            : <NoDATA />
+                                    )
+                                }
+                                {loading && <div className="flex justify-center items-center w-full h-20"><Loader /></div>}
+                            </div>
+
+                            {/* Tab 2: Trending Posts */}
+                            <div className="space-y-4">
+                                {
+                                    trendingBlogs === null ? (
+                                        [...Array(5)].map((_, i) => <MinimalPostCardSkeleton key={i} />)
+                                    ) : (
+                                        trendingBlogs.length ?
+                                            trendingBlogs.map((blog, i) => (
+                                                <AnimationWrapper transition={{ duration: 0.5, delay: i * 0.05 }} key={i}>
+                                                    <MinimalPostCard blog={blog} index={i} />
+                                                </AnimationWrapper>
+                                            ))
+                                            : <NoDATA />
+                                    )
+                                }
+                            </div>
+                        </InPageNavigation>
                     </div>
+
+                    {/* Right: Sidebar (Hidden on Mobile) */}
+                    <aside className="hidden lg:block sticky top-24 h-fit">
+                        <div className="space-y-8">
+
+                            {/* Categories */}
+                            <div className="bg-white dark:bg-neutral-800 rounded-2xl p-6 border border-neutral-200 dark:border-neutral-700">
+                                <h2 className="text-lg font-bold mb-4 text-neutral-900 dark:text-white flex items-center gap-2">
+                                    <i className="fi fi-rr-apps text-primary"></i>
+                                    Categories
+                                </h2>
+                                <div className="flex flex-wrap gap-2">
+                                    {Categories.map((category, i) => (
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={loadPostByCat}
+                                            key={i}
+                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${selectedCategory === category
+                                                    ? "bg-primary text-white shadow-md"
+                                                    : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+                                                }`}
+                                        >
+                                            {category}
+                                        </motion.button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Trending Sidebar */}
+                            <div className="bg-white dark:bg-neutral-800 rounded-2xl p-6 border border-neutral-200 dark:border-neutral-700">
+                                <h2 className="text-lg font-bold mb-4 text-neutral-900 dark:text-white flex items-center gap-2">
+                                    <i className="fi fi-rs-arrow-trend-up text-primary"></i>
+                                    Trending
+                                </h2>
+                                <div className="space-y-4">
+                                    {
+                                        trendingBlogs === null ? (
+                                            [...Array(3)].map((_, i) => <MinimalPostCardSkeleton key={i} />)
+                                        ) : (
+                                            trendingBlogs.length ?
+                                                trendingBlogs.slice(0, 3).map((blog, i) => (
+                                                    <AnimationWrapper transition={{ duration: 0.5, delay: i * 0.05 }} key={i}>
+                                                        <MinimalPostCard blog={blog} index={i} />
+                                                    </AnimationWrapper>
+                                                ))
+                                                : <NoDATA />
+                                        )
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
                 </div>
             </section>
         </AnimationWrapper>
