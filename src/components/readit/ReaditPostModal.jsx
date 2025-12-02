@@ -8,7 +8,7 @@ import { getDay } from '../../common/date';
 import VoteButtons from './VoteButtons';
 import { toast } from 'react-hot-toast';
 import Loader from '../components/Loader'; // Corrected import path
-import AIAgentModal from './AiAgentModal';
+import AIAgentModal from './AiAgentModalComponent';
 import DOMPurify from 'dompurify';
 
 // --- Re-usable Comment Form ---

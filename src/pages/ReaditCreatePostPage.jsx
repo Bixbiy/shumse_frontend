@@ -8,7 +8,7 @@ import { UploadImage } from '../common/aws';
 import toast from 'react-hot-toast';
 import Loader from '../components/Loader';
 import { motion, AnimatePresence } from 'framer-motion';
-import AIAgentModal from '../components/readit/AiAgentModal';
+import AIAgentModal from '../components/readit/AiAgentModalComponent';
 
 const ReaditCreatePostPage = () => {
     const navigate = useNavigate();
