@@ -11,7 +11,7 @@ export default defineConfig({
       manifest: {
         name: "Shumse | Modern Blogging Platform",
         short_name: "Shumse",
-        description: "Join the community of writers and readers on Shumse. Share your stories, ideas, and expertise.",
+        description: "Join the community of writers and readers on Shumse.",
         start_url: "/",
         display: "standalone",
         background_color: "#0f172a",
@@ -80,54 +80,7 @@ export default defineConfig({
     })
   ],
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          // Core React ecosystem
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
-            return 'vendor-react';
-          }
-          if (id.includes('node_modules/react-router')) {
-            return 'vendor-router';
-          }
-          
-          // Animation libraries
-          if (id.includes('node_modules/framer-motion')) {
-            return 'vendor-animation';
-          }
-          
-          // Editor.js and related
-          if (id.includes('node_modules/@editorjs') || id.includes('node_modules/@tiptap')) {
-            return 'vendor-editor';
-          }
-          
-          // UI libraries (Material-UI, Headless UI)
-          if (id.includes('node_modules/@mui') || id.includes('node_modules/@headlessui') || id.includes('node_modules/@heroicons')) {
-            return 'vendor-ui';
-          }
-          
-          // Socket.io
-          if (id.includes('node_modules/socket.io-client')) {
-            return 'vendor-socket';
-          }
-          
-          // Form libraries
-          if (id.includes('node_modules/react-hook-form') || id.includes('node_modules/yup') || id.includes('node_modules/@hookform')) {
-            return 'vendor-forms';
-          }
-          
-          // Utility libraries
-          if (id.includes('node_modules/lodash') || id.includes('node_modules/uuid') || id.includes('node_modules/axios')) {
-            return 'vendor-utils';
-          }
-          
-          // All other node_modules
-          if (id.includes('node_modules')) {
-            return 'vendor-misc';
-          }
-        },
-      },
-    },
+    // REMOVED manualChunks to fix the loading error
     chunkSizeWarningLimit: 1000,
     minify: 'terser',
     terserOptions: {
@@ -141,10 +94,8 @@ export default defineConfig({
       },
     },
     sourcemap: false,
-    // Enable CSS code splitting
     cssCodeSplit: true,
-    // Optimize asset handling
-    assetsInlineLimit: 4096, // 4kb - inline smaller assets
+    assetsInlineLimit: 4096,
   },
   optimizeDeps: {
     include: [
@@ -156,6 +107,6 @@ export default defineConfig({
     ],
   },
   server: {
-    port: 3000,
+    port: 8080,
   }
 });
