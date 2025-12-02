@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, createContext } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import LazyLoad from 'react-lazyload';
 import { Toaster } from "react-hot-toast";
 import AnimationWrapper from "../common/page-animation";
 import api from "../common/api";
@@ -212,14 +211,12 @@ const BlogPage = () => {
 
           <article className="max-w-[900px] center py-10 max-lg:px-[5vw]">
             <header className="mb-12">
-              <LazyLoad height={500} once offset={100}>
-                <ProgressiveImage
-                  src={banner}
-                  placeholder="/placeholder-blog.jpg"
-                  className="aspect-video rounded-xl shadow-lg w-full object-cover"
-                  alt={title}
-                />
-              </LazyLoad>
+              <ProgressiveImage
+                src={banner}
+                placeholder="/placeholder-blog.jpg"
+                className="aspect-video rounded-xl shadow-lg w-full object-cover"
+                alt={title}
+              />
 
               <div className="mt-12">
                 <h1 className="text-4xl font-bold mb-4 text-gradient bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -229,14 +226,12 @@ const BlogPage = () => {
 
               <div className="flex flex-wrap justify-between items-center my-8 gap-4">
                 <div className="flex items-center gap-5">
-                  <LazyLoad once offset={100}>
-                    <img
-                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
-                      src={profile_img}
-                      alt={fullname}
-                      loading="lazy"
-                    />
-                  </LazyLoad>
+                  <img
+                    className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
+                    src={profile_img}
+                    alt={fullname}
+                    loading="lazy"
+                  />
                   <div>
                     <p className="font-medium capitalize">
                       {fullname}

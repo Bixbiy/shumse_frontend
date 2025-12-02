@@ -20,13 +20,13 @@ export default defineConfig({
         categories: ["social", "blogging", "education", "lifestyle"],
         icons: [
           {
-            src: "/logo.png",
+            src: "/readit.png",
             sizes: "192x192",
             type: "image/png",
             purpose: "any maskable"
           },
           {
-            src: "/logo.png",
+            src: "/readit.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable"
