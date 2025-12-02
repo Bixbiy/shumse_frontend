@@ -1,6 +1,7 @@
 /*
  * REFACTORED: SocketContext.jsx
  * Fixes: Memory leaks, Race conditions, Redundant re-renders
+ * Update: Fixed connection logic to use Cloudflare Proxy
  */
 import React, { createContext, useContext, useEffect, useState, useRef, useMemo } from 'react';
 import { io } from 'socket.io-client';
@@ -22,12 +23,17 @@ export const SocketProvider = ({ children }) => {
         // Create socket only once
         if (!socketRef.current) {
             console.log("🔄 Creating socket connection...");
-            const newSocket = io(import.meta.env.VITE_SERVER_DOMAIN, {
+            
+            // CRITICAL FIX: Use window.location.origin to trigger Cloudflare Proxy
+            // This ensures requests go to https://your-site.pages.dev/socket.io/
+            // which Cloudflare then forwards to your Google Cloud Run backend.
+            const newSocket = io(window.location.origin, {
                 withCredentials: true,
                 reconnection: true,
                 reconnectionDelay: 1000,
                 reconnectionAttempts: 5,
-                autoConnect: true
+                autoConnect: true,
+                transports: ['websocket', 'polling'] // Ensure specific transports are allowed
             });
 
             newSocket.on('connect', () => {
