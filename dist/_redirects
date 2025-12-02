@@ -1,2 +1,8 @@
-/api/*  https://spread-server-528420849904.europe-west1.run.app/:splat  200
-/*  /index.html  200
+
+/socket.io/* https://spread-server-528420849904.europe-west1.run.app/socket.io/:splat  200
+
+
+/api/* https://spread-server-528420849904.europe-west1.run.app/:splat  200
+
+
+/* /index.html  200
