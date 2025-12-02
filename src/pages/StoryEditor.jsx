@@ -2,17 +2,125 @@ import React, { useState, useContext } from 'react';
 import api from '../common/api';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import toast, { Toaster } from 'react-hot-toast';
 import { FiPlus, FiImage, FiX, FiRotateCw } from 'react-icons/fi';
-// Import ReactQuill if you use it. It's commented out in your original file.
-// import ReactQuill from 'react-quill';
-// import 'react-quill/dist/quill.snow.css';
 import { UserContext } from '../App';
 import { UploadImage } from '../common/aws';
 import Tags from '../components/Tags';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+// Sortable Item Component
+function SortableSlideItem({ slide, index, removeSlide, handleSlideUpload, setStory }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: `slide-${index}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="border rounded-2xl p-4 bg-white shadow-sm hover:shadow-lg transition"
+    >
+      <div className="flex justify-between items-center mb-4">
+        <div
+          {...attributes}
+          {...listeners}
+          className="flex items-center gap-2 cursor-move text-gray-600 outline-none"
+        >
+          <span className="font-medium">Slide {index + 1}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => removeSlide(index)}
+          className="text-red-500 hover:text-red-600"
+        >
+          <FiX size={20} />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="border-2 border-dashed rounded-2xl p-4 relative">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) =>
+              handleSlideUpload(e.target.files[0], index)
+            }
+            className="hidden"
+            id={`slide-upload-${index}`}
+          />
+          <label
+            htmlFor={`slide-upload-${index}`}
+            className="cursor-pointer block text-center h-full"
+          >
+            {slide.url ? (
+              <img
+                src={slide.url}
+                alt={`Slide ${index + 1}`}
+                className="max-h-60 mx-auto rounded-2xl object-cover w-full h-full"
+              />
+            ) : (
+              <div className="text-gray-500 py-8">
+                {slide.loading ? (
+                  <div className="flex flex-col items-center">
+                    <FiRotateCw className="animate-spin text-4xl mb-2" />
+                    <p>Uploading...</p>
+                  </div>
+                ) : (
+                  <>
+                    <FiImage className="text-4xl mx-auto mb-2" />
+                    <p>{slide.error || 'Click to upload image'}</p>
+                  </>
+                )}
+              </div>
+            )}
+          </label>
+        </div>
+
+        <div className="h-full">
+          <textarea
+            value={slide.description}
+            onChange={(e) => {
+              setStory(prev => {
+                const newSlides = [...prev.slides];
+                newSlides[index] = { ...newSlides[index], description: e.target.value };
+                return { ...prev, slides: newSlides };
+              });
+            }}
+            placeholder="Slide description..."
+            className="w-full h-full p-2 border rounded-2xl"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function StoryEditor() {
   const [story, setStory] = useState({
@@ -25,7 +133,14 @@ export default function StoryEditor() {
   const navigate = useNavigate();
   const { userAuth: { access_token } } = useContext(UserContext);
 
-  // Banner dropzone with file type/size validation
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Banner dropzone
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
       'image/jpeg': [],
@@ -39,7 +154,6 @@ export default function StoryEditor() {
       const file = files[0];
       if (!file) return;
 
-      // Extra validation
       if (!file.type.startsWith('image/')) {
         toast.error("Invalid file type. Please upload an image.");
         return;
@@ -50,11 +164,7 @@ export default function StoryEditor() {
       }
 
       try {
-        // --- MODIFIED ---
-        // UploadImage now returns an object { url, public_id }.
-        // We destructure 'url' from it.
         const { url } = await UploadImage(file);
-
         setStory(prev => ({ ...prev, banner: url }));
         toast.success('Banner uploaded successfully!');
       } catch (error) {
@@ -64,14 +174,11 @@ export default function StoryEditor() {
     }
   });
 
-  // Upload multiple slides at once with file type/size validation
   const handleMultipleSlidesUpload = async (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     const fileArray = Array.from(files);
-
-    // Filter out any non-image or large files
     const validFiles = fileArray.filter(file => {
       if (!file.type.startsWith('image/')) {
         toast.error(`${file.name} is not a valid image file.`);
@@ -86,7 +193,6 @@ export default function StoryEditor() {
 
     if (validFiles.length === 0) return;
 
-    // Append new slides with a temporary "loading" state
     setStory(prev => ({
       ...prev,
       slides: [
@@ -94,7 +200,7 @@ export default function StoryEditor() {
         ...validFiles.map(file => ({
           url: '',
           description: '',
-          file, // Keep track of the original file object for matching
+          file,
           loading: true,
           error: null
         }))
@@ -104,32 +210,25 @@ export default function StoryEditor() {
     await Promise.all(
       validFiles.map(async (file) => {
         try {
-          // --- MODIFIED ---
-          // Destructure 'url' from the response object
           const { url } = await UploadImage(file);
-
           setStory(prev => {
             const updatedSlides = [...prev.slides];
-            // Find the slide that matches this file object to update the correct one
             const targetIndex = updatedSlides.findIndex(s => s.file === file);
-
             if (targetIndex !== -1) {
               updatedSlides[targetIndex] = {
                 ...updatedSlides[targetIndex],
-                url: url, // Use the extracted URL
+                url: url,
                 loading: false,
-                file: null, // Clear file object to free memory
+                file: null,
               };
             }
             return { ...prev, slides: updatedSlides };
           });
           toast.success(`Image uploaded!`);
-
         } catch (error) {
           setStory(prev => {
             const updatedSlides = [...prev.slides];
             const targetIndex = updatedSlides.findIndex(s => s.file === file);
-
             if (targetIndex !== -1) {
               updatedSlides[targetIndex] = {
                 ...updatedSlides[targetIndex],
@@ -146,7 +245,6 @@ export default function StoryEditor() {
     e.target.value = null;
   };
 
-  // Single slide upload (for reuploading) with file type/size check
   const handleSlideUpload = async (file, index) => {
     if (!file.type.startsWith('image/')) {
       toast.error("Invalid file type. Please upload an image.");
@@ -166,15 +264,12 @@ export default function StoryEditor() {
     setStory(prev => ({ ...prev, slides: updatedSlides }));
 
     try {
-      // --- MODIFIED ---
-      // Destructure 'url' from the response object
       const { url } = await UploadImage(file);
-
       setStory(prev => {
         const newSlides = [...prev.slides];
         newSlides[index] = {
           ...newSlides[index],
-          url: url, // Use the extracted URL
+          url: url,
           loading: false,
           file: null
         };
@@ -195,8 +290,6 @@ export default function StoryEditor() {
     }
   };
 
-  // --- NO CHANGES below this line ---
-
   const removeSlide = (index) => {
     setStory(prev => ({
       ...prev,
@@ -204,12 +297,19 @@ export default function StoryEditor() {
     }));
   };
 
-  const handleDragEnd = (result) => {
-    if (!result.destination) return;
-    const items = Array.from(story.slides);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    setStory(prev => ({ ...prev, slides: items }));
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      setStory((prev) => {
+        const oldIndex = parseInt(active.id.split('-')[1]);
+        const newIndex = parseInt(over.id.split('-')[1]);
+        return {
+          ...prev,
+          slides: arrayMove(prev.slides, oldIndex, newIndex),
+        };
+      });
+    }
   };
 
   const handleSubmit = async () => {
@@ -231,7 +331,6 @@ export default function StoryEditor() {
       };
 
       await api.post('/create-story', storyData);
-
       toast.success('Story published successfully!');
       navigate('/');
     } catch (error) {
@@ -318,104 +417,29 @@ export default function StoryEditor() {
             </div>
           </div>
 
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="slides">
-              {(provided) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className="space-y-4"
-                >
-                  {story.slides.map((slide, index) => (
-                    <Draggable
-                      key={index} // Note: Using index as key is not ideal if list is re-ordered heavily, but fine for this
-                      draggableId={`slide-${index}`}
-                      index={index}
-                    >
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          className="border rounded-2xl p-4 bg-white shadow-sm hover:shadow-lg transition"
-                        >
-                          <div className="flex justify-between items-center mb-4">
-                            <div
-                              {...provided.dragHandleProps}
-                              className="flex items-center gap-2 cursor-move text-gray-600"
-                            >
-                              <span className="font-medium">Slide {index + 1}</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeSlide(index)}
-                              className="text-red-500 hover:text-red-600"
-                            >
-                              <FiX size={20} />
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="border-2 border-dashed rounded-2xl p-4 relative">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) =>
-                                  handleSlideUpload(e.target.files[0], index)
-                                }
-                                className="hidden"
-                                id={`slide-upload-${index}`}
-                              />
-                              <label
-                                htmlFor={`slide-upload-${index}`}
-                                className="cursor-pointer block text-center h-full"
-                              >
-                                {slide.url ? (
-                                  <img
-                                    src={slide.url}
-                                    alt={`Slide ${index + 1}`}
-                                    className="max-h-60 mx-auto rounded-2xl object-cover w-full h-full"
-                                  />
-                                ) : (
-                                  <div className="text-gray-500 py-8">
-                                    {slide.loading ? (
-                                      <div className="flex flex-col items-center">
-                                        <FiRotateCw className="animate-spin text-4xl mb-2" />
-                                        <p>Uploading...</p>
-                                      </div>
-                                    ) : (
-                                      <>
-                                        <FiImage className="text-4xl mx-auto mb-2" />
-                                        <p>{slide.error || 'Click to upload image'}</p>
-                                      </>
-                                    )}
-                                  </div>
-                                )}
-                              </label>
-                            </div>
-
-                            <div className="h-full">
-                              {/* Your ReactQuill component. Make sure it's imported if you use it. */}
-                              <textarea
-                                value={slide.description}
-                                onChange={(e) => {
-                                  const newSlides = [...story.slides];
-                                  newSlides[index].description = e.target.value;
-                                  setStory(prev => ({ ...prev, slides: newSlides }));
-                                }}
-                                placeholder="Slide description..."
-                                className="w-full h-full p-2 border rounded-2xl"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={story.slides.map((_, index) => `slide-${index}`)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-4">
+                {story.slides.map((slide, index) => (
+                  <SortableSlideItem
+                    key={`slide-${index}`}
+                    index={index}
+                    slide={slide}
+                    removeSlide={removeSlide}
+                    handleSlideUpload={handleSlideUpload}
+                    setStory={setStory}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         </div>
 
         <div>
