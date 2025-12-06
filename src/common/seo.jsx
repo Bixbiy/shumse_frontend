@@ -21,8 +21,8 @@ const SEO = ({
     image,
     schema
 }) => {
-    const siteName = 'Shumse';
-    const domain = import.meta.env.VITE_SERVER_DOMAIN || 'https://shumse.com';
+    const siteName = 'Shums';
+    const domain = import.meta.env.VITE_SERVER_DOMAIN || 'https://shums.com';
     const fullUrl = canonical ? (canonical.startsWith('http') ? canonical : `${domain}${canonical}`) : domain;
     const fullImage = image ? (image.startsWith('http') ? image : `${domain}${image}`) : `${domain}/og-image.png`;
 

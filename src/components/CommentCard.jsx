@@ -383,8 +383,8 @@ const CommentCard = React.memo(({ commentData, depth = 0 }) => {
                                     onClick={handleLike}
                                     disabled={!access_token}
                                     className={`flex items-center gap-1 text-sm transition-colors ${isLiked
-                                            ? 'text-red-500'
-                                            : 'text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'
+                                        ? 'text-red-500'
+                                        : 'text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'
                                         } ${!access_token ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     <Icons.Heart filled={isLiked} />
@@ -395,8 +395,8 @@ const CommentCard = React.memo(({ commentData, depth = 0 }) => {
                                     onClick={handleReplyToggle}
                                     disabled={!access_token}
                                     className={`flex items-center gap-1 text-sm transition-colors ${!access_token
-                                            ? 'opacity-50 cursor-not-allowed text-gray-400'
-                                            : 'text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'
+                                        ? 'opacity-50 cursor-not-allowed text-gray-400'
+                                        : 'text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'
                                         }`}
                                 >
                                     <Icons.Reply />
@@ -455,8 +455,8 @@ const CommentCard = React.memo(({ commentData, depth = 0 }) => {
                                             onClick={loadMoreReplies}
                                             disabled={repliesLoading}
                                             className={`flex items-center gap-2 mt-2 text-sm ${repliesLoading
-                                                    ? 'text-gray-400'
-                                                    : 'text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300'
+                                                ? 'text-gray-400'
+                                                : 'text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300'
                                                 }`}
                                         >
                                             {repliesLoading ? (

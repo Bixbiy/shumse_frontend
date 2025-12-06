@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import googleIcon from "../imgs/google.png";
 import AnimationWrapper from "../common/page-animation";
@@ -112,9 +112,28 @@ const UserAuthForm = ({ type }) => {
                     className="w-full max-w-md bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-8 rounded-2xl shadow-2xl"
                     onSubmit={handleSubmit}
                 >
-                    <h1 className="text-4xl font-bold text-center text-gray-900 dark:text-white mb-8">
+                    <h1 className="text-4xl font-bold text-center text-gray-900 dark:text-white mb-2">
                         {type === "sign-in" ? "Welcome back!" : "Join Us Today!"}
                     </h1>
+                    <div className="mb-4 text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {type === "sign-in" ? (
+                                <>
+                                    Don&apos;t have an account?{" "}
+                                    <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+                                        Join us today
+                                    </Link>
+                                </>
+                            ) : (
+                                <>
+                                    Already a member?{" "}
+                                    <Link to="/signin" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+                                        Sign in here
+                                    </Link>
+                                </>
+                            )}
+                        </p>
+                    </div>
 
                     {type !== "sign-in" && (
                         <div className="mb-4">
@@ -232,7 +251,9 @@ const UserAuthForm = ({ type }) => {
                             <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
                                 Or continue with
                             </span>
+
                         </div>
+
                     </div>
 
                     <button
@@ -244,25 +265,7 @@ const UserAuthForm = ({ type }) => {
                         Continue with Google
                     </button>
 
-                    <div className="mt-8 text-center">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {type === "sign-in" ? (
-                                <>
-                                    Don't have an account?{" "}
-                                    <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
-                                        Join us today
-                                    </Link>
-                                </>
-                            ) : (
-                                <>
-                                    Already a member?{" "}
-                                    <Link to="/signin" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
-                                        Sign in here
-                                    </Link>
-                                </>
-                            )}
-                        </p>
-                    </div>
+
                 </form>
             </section>
         </AnimationWrapper>

@@ -7,7 +7,7 @@ import { apiGetReaditComments, apiCreateReaditComment, apiVoteReaditPost, apiVot
 import { getDay } from '../../common/date';
 import VoteButtons from './VoteButtons';
 import { toast } from 'react-hot-toast';
-import Loader from '../components/Loader'; // Corrected import path
+import Loader from '../Loader';
 import AIAgentModal from './AiAgentModalComponent';
 import DOMPurify from 'dompurify';
 
@@ -104,7 +104,7 @@ const CreateCommentForm = ({ postId, parentId = null, onCommentCreated, autoFocu
 };
 
 // --- Re-usable Comment Component ---
-const Comment = ({ comment, onReply, onVote, postContext }) => {
+const Comment = ({ comment, onReply, postContext }) => {
     const [isReplying, setIsReplying] = useState(false);
     const authorInfo = comment.author?.personal_info;
 
@@ -134,7 +134,7 @@ const Comment = ({ comment, onReply, onVote, postContext }) => {
                     {comment.content}
                 </p>
                 <div className="flex items-center space-x-4">
-                    <VoteButtons item={comment} onVote={onVote} isComment={true} />
+                    <VoteButtons item={comment} isComment={true} />
                     <button
                         onClick={() => setIsReplying(!isReplying)}
                         className="flex items-center text-xs text-gray-500 dark:text-gray-400 font-medium hover:text-blue-500"
@@ -170,7 +170,7 @@ const Comment = ({ comment, onReply, onVote, postContext }) => {
                 <div className="mt-4 pl-4 border-l-2 border-gray-100 dark:border-grey">
                     {comment.children &&
                         comment.children.map((reply) => (
-                            <Comment key={reply._id} comment={reply} onReply={onReply} onVote={onVote} postContext={postContext} />
+                            <Comment key={reply._id} comment={reply} onReply={onReply} postContext={postContext} />
                         ))}
                 </div>
             </div>
@@ -183,7 +183,7 @@ const ReaditPostModal = ({ post, onClose }) => {
     const [comments, setComments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [localPost, setLocalPost] = useState(post);
-    const { socket } = useSocket(); // Use corrected hook
+    const { socket } = useSocket();
     const modalRef = useRef(null);
 
     // ACCESSIBILITY: Focus Trap & ESC Key
@@ -273,9 +273,6 @@ const ReaditPostModal = ({ post, onClose }) => {
         setLocalPost(prev => ({ ...prev, commentCount: (prev.commentCount || 0) + 1 }));
     }, []);
 
-    const handleVotePost = (postId, voteType) => apiVoteReaditPost(postId, voteType);
-    const handleVoteComment = (commentId, voteType) => apiVoteReaditComment(commentId, voteType);
-
     const postContext = { title: localPost?.title, content: localPost?.content };
 
     return (
@@ -314,7 +311,7 @@ const ReaditPostModal = ({ post, onClose }) => {
                         {/* Post Content */}
                         <div className="p-4 max-h-[75vh] overflow-y-auto">
                             <div className="flex">
-                                <VoteButtons item={localPost} onVote={handleVotePost} />
+                                <VoteButtons item={localPost} />
                                 <div className="pl-4 flex-grow w-full overflow-hidden">
                                     <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
                                         <Link to={`/user/${localPost.author.personal_info.username}`} className="flex items-center hover:underline">
@@ -355,7 +352,6 @@ const ReaditPostModal = ({ post, onClose }) => {
                                                 key={comment._id}
                                                 comment={comment}
                                                 onReply={handleCommentCreated}
-                                                onVote={handleVoteComment}
                                                 postContext={postContext}
                                             />
                                         ))}

@@ -1,319 +1,447 @@
 /*
  * PATH: src/pages/ReaditHomePage.jsx
+ * PHASE 4: Completely revamped with vibrant UI, real-time updates, SEO optimized
  */
-import React, { useContext, useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { UserContext } from '../App';
-import axiosInstance from '../common/api';
-import { toast } from 'react-hot-toast';
-import ReaditPostCard from '../components/readit/ReaditPostCard';
-import ReaditSidebar from '../components/readit/ReaditSidebar';
+import React, { useState, useEffect, useContext, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
-import InPageNavigation from '../components/InPageNavigation';
-import Loader from '../components/Loader';
-import { useWindowVirtualizer } from '@tanstack/react-virtual';
+import { useReadit } from '../hooks/useReadit';
+import { UserContext } from '../App';
+import InfiniteScrollFeed from '../components/readit/InfiniteScrollFeed';
+import PullToRefresh from '../components/readit/PullToRefresh';
+import PageTransition from '../components/readit/PageTransition';
+import axiosInstance from '../common/api';
+import { useSocket } from '../context/SocketContext';
 
-// Simple skeleton for loading state
-const PostCardSkeleton = () => (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 shadow-sm border border-gray-200 dark:border-gray-700 animate-pulse">
-        <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-            <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+// Vibrant Sort Button Component
+const SortButton = memo(({ option, active, onClick, icon }) => (
+    <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => onClick(option)}
+        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${active
+            ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/30'
+            : 'bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50'
+            }`}
+    >
+        <i className={`fi ${icon}`}></i>
+        <span className="capitalize">{option}</span>
+    </motion.button>
+));
+
+// Community Card - Vibrant Design
+const CommunityCard = memo(({ community }) => (
+    <motion.div
+        whileHover={{ scale: 1.02, y: -2 }}
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="group"
+    >
+        <Link
+            to={`/readit/c/${community.name}`}
+            className="flex items-center gap-3 p-3 rounded-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-300"
+        >
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-lg overflow-hidden">
+                {community.icon ? (
+                    <img src={community.icon} alt="" className="w-full h-full object-cover" onError={(e) => e.target.style.display = 'none'} />
+                ) : (
+                    community.name[0].toUpperCase()
+                )}
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="font-bold text-gray-900 dark:text-white truncate group-hover:text-orange-500 transition-colors">
+                    c/{community.name}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {community.memberCount?.toLocaleString() || 0} members
+                </p>
+            </div>
+            <i className="fi fi-rr-angle-small-right text-gray-400 group-hover:text-orange-500 group-hover:translate-x-1 transition-all"></i>
+        </Link>
+    </motion.div>
+));
+
+// Trending Ticker Component
+const TrendingTicker = ({ communities }) => {
+    if (!communities || communities.length === 0) return null;
+
+    return (
+        <div className="w-full overflow-hidden bg-orange-500/10 border-y border-orange-500/20 py-2 mb-6 backdrop-blur-sm">
+            <div className="flex whitespace-nowrap animate-scroll">
+                {[...communities, ...communities].map((c, i) => (
+                    <Link
+                        key={`${c._id}-${i}`}
+                        to={`/readit/c/${c.name}`}
+                        className="inline-flex items-center gap-2 mx-6 text-sm font-bold text-gray-700 dark:text-gray-200 hover:text-orange-500 transition-colors"
+                    >
+                        <span className="text-orange-500">#</span>
+                        {c.name}
+                        <span className="text-xs font-normal text-gray-500 opacity-70">
+                            {Intl.NumberFormat('en-US', { notation: "compact" }).format(c.memberCount)}
+                        </span>
+                    </Link>
+                ))}
+            </div>
         </div>
-        <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-        <div className="h-20 w-full bg-gray-200 dark:bg-gray-700 rounded"></div>
+    );
+};
+
+// Sidebar Skeleton
+const SidebarSkeleton = () => (
+    <div className="space-y-3 animate-pulse">
+        {Array(5).fill(0).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-gray-100 dark:bg-gray-800">
+                <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700"></div>
+                <div className="flex-1">
+                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+                    <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                </div>
+            </div>
+        ))}
     </div>
 );
 
 const ReaditHomePage = () => {
     const { userAuth } = useContext(UserContext);
+    const { socket } = useSocket();
 
-    // UI State
-    const [activeTab, setActiveTab] = useState('Popular Posts');
-    const [sort, setSort] = useState('hot');
-    const [showCreateMenu, setShowCreateMenu] = useState(false);
-    const [showMobileSidebar, setShowMobileSidebar] = useState(false);
-
-    // Data State
-    const [posts, setPosts] = useState([]);
-    const [popularCommunities, setPopularCommunities] = useState([]);
-
-    // Loading State
-    const [isLoading, setIsLoading] = useState(true);
-    const [isFetchingMore, setIsFetchingMore] = useState(false);
-
-    // Pagination Refs
-    const page = useRef(1);
-    const hasMore = useRef(true);
-    const listRef = useRef(null);
-
-    const isLoggedIn = useMemo(() => !!userAuth?.access_token, [userAuth]);
-
-    // --- DATA FETCHING ---
-
-    const fetchPopularCommunities = async () => {
-        try {
-            const { data } = await axiosInstance.get('/readit/communities/popular');
-            setPopularCommunities(data || []);
-        } catch (err) {
-            console.error("Failed to fetch communities:", err);
-        }
-    };
-
-    const fetchPosts = useCallback(async (isReset = false) => {
-        if (isReset) {
-            page.current = 1;
-            hasMore.current = true;
-            setPosts([]);
-            setIsLoading(true);
-        } else {
-            setIsFetchingMore(true);
-        }
-
-        // Logic to determine endpoint
-        let endpoint = '/readit/posts/public';
-        if (activeTab === 'Your Feed' && isLoggedIn) {
-            endpoint = '/readit/posts/feed';
-        }
-
-        try {
-            const { data } = await axiosInstance.get(`${endpoint}?sort=${sort}&page=${page.current}&limit=10`);
-
-            if (isReset) {
-                setPosts(data.posts || []);
-            } else {
-                setPosts(prev => [...prev, ...(data.posts || [])]);
-            }
-
-            hasMore.current = data.hasMore;
-            page.current += 1;
-
-        } catch (err) {
-            console.error("Failed to fetch posts:", err);
-            toast.error("Could not load posts");
-        } finally {
-            setIsLoading(false);
-            setIsFetchingMore(false);
-        }
-    }, [activeTab, sort, isLoggedIn]);
-
-    // --- VIRTUALIZATION ---
-    const rowVirtualizer = useWindowVirtualizer({
-        count: posts.length,
-        estimateSize: () => 200, // Estimate row height
-        overscan: 5,
-        scrollMargin: listRef.current?.offsetTop ?? 0,
-    });
-
-    // Infinite Scroll Trigger
-    useEffect(() => {
-        const [lastItem] = [...rowVirtualizer.getVirtualItems()].reverse();
-        if (!lastItem) return;
-
-        if (
-            lastItem.index >= posts.length - 1 &&
-            hasMore.current &&
-            !isFetchingMore &&
-            !isLoading
-        ) {
-            fetchPosts(false);
-        }
-    }, [
-        hasMore,
-        fetchPosts,
-        posts.length,
-        isFetchingMore,
+    const {
+        posts,
         isLoading,
-        rowVirtualizer.getVirtualItems(),
-    ]);
+        isFetchingMore,
+        hasMore,
+        sort,
+        setSort,
+        activeTab,
+        setActiveTab,
+        loadMore,
+        isLoggedIn,
+        refresh
+    } = useReadit('hot');
 
+    const [popularCommunities, setPopularCommunities] = useState([]);
+    const [communitiesLoading, setCommunitiesLoading] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    // --- EFFECTS ---
-
+    // Fetch popular communities
     useEffect(() => {
-        fetchPopularCommunities();
+        const fetchPopular = async () => {
+            setCommunitiesLoading(true);
+            try {
+                const { data } = await axiosInstance.get('/readit/communities/popular');
+                setPopularCommunities(data || []);
+            } catch (err) {
+                console.error("Failed to fetch popular communities", err);
+            } finally {
+                setCommunitiesLoading(false);
+            }
+        };
+        fetchPopular();
     }, []);
 
+    // Real-time new post listener
     useEffect(() => {
-        // If user logs out while on "Your Feed", switch back
-        if (!isLoggedIn && activeTab === 'Your Feed') {
-            setActiveTab('Popular Posts');
-            return;
-        }
-        fetchPosts(true);
-    }, [fetchPosts, activeTab, sort, isLoggedIn]);
+        if (!socket) return;
 
+        socket.on('newReaditPost', (post) => {
+            // Optimistic update could happen here, or just let the feed refresh eventually
+            console.log('New post received:', post.title);
+        });
 
-    // --- HANDLERS ---
+        return () => socket.off('newReaditPost');
+    }, [socket]);
 
-    const handleNavChange = (route) => setActiveTab(route);
-    const toggleCreateMenu = () => setShowCreateMenu(prev => !prev);
+    // Scroll lock for mobile sidebar
+    useEffect(() => {
+        document.body.style.overflow = isSidebarOpen ? 'hidden' : 'unset';
+        return () => { document.body.style.overflow = 'unset'; };
+    }, [isSidebarOpen]);
+
+    const handleRefresh = useCallback(async () => {
+        if (refresh) await refresh();
+    }, [refresh]);
+
+    const sortOptions = [
+        { key: 'hot', icon: 'fi-rr-flame' },
+        { key: 'new', icon: 'fi-rr-sparkles' },
+        { key: 'top', icon: 'fi-rr-trophy' }
+    ];
 
     return (
-        <div className="max-w-6xl mx-auto flex gap-8 justify-center p-4">
+        <PageTransition>
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-black transition-colors duration-300">
+                {/* SEO Optimized Head */}
+                <Helmet>
+                    <title>Readit by Shums | Discover, Share, Connect</title>
+                    <meta name="description" content="Join Readit - the modern community platform where ideas come alive. Share stories, discover trends, and connect with passionate communities." />
+                    <meta name="keywords" content="readit, community, forum, discussion, social, trends, posts" />
+                    <meta property="og:title" content="Readit by Shums | Discover, Share, Connect" />
+                    <meta property="og:description" content="The modern community platform where ideas come alive" />
+                    <meta property="og:type" content="website" />
+                    <link rel="canonical" href={window.location.origin + '/readit'} />
+                </Helmet>
 
-            {/* MAIN FEED COLUMN */}
-            <div className="w-full md:max-w-2xl" ref={listRef}>
-                {/* Header & Controls */}
-                <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                    <div className="flex items-center gap-2 w-full md:w-auto">
-                        {/* Mobile Sidebar Toggle */}
-                        <button
-                            className="md:hidden btn-icon"
-                            onClick={() => setShowMobileSidebar(true)}
-                        >
-                            <i className="fi fi-rr-menu-burger text-xl"></i>
-                        </button>
+                {/* Decorative Background Elements */}
+                <div className="fixed inset-0 pointer-events-none overflow-hidden">
+                    <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-500/5 dark:bg-orange-500/10 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/5 dark:bg-purple-500/10 rounded-full blur-3xl"></div>
+                </div>
 
-                        <InPageNavigation
-                            routes={['Popular Posts', 'Your Feed']}
-                            defaultHidden={!isLoggedIn ? ['Your Feed'] : []}
-                            defaultActiveIndex={activeTab === 'Your Feed' ? 1 : 0}
-                            onRouteChange={handleNavChange}
-                        />
-                    </div>
+                {/* Mobile Header */}
+                <div className="md:hidden sticky top-[60px] z-40 px-4 py-3">
+                    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-lg p-3">
+                        <div className="flex items-center justify-between mb-3">
+                            <button
+                                onClick={() => setIsSidebarOpen(true)}
+                                className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            >
+                                <i className="fi fi-rr-menu-burger text-lg dark:text-white"></i>
+                                <span className="font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">Readit</span>
+                            </button>
+                            <Link
+                                to="/readit/create-post"
+                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-bold shadow-lg shadow-orange-500/30 hover:shadow-xl transition-shadow"
+                            >
+                                <i className="fi fi-rr-plus"></i>
+                                <span className="hidden xs:inline">Create</span>
+                            </Link>
+                        </div>
 
-                    <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                        {/* Sort Dropdown/Buttons */}
-                        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-                            {['hot', 'new', 'top'].map(opt => (
-                                <button
-                                    key={opt}
-                                    onClick={() => setSort(opt)}
-                                    className={`px-3 py-1 text-sm rounded-md capitalize transition-all ${sort === opt
-                                        ? 'bg-white dark:bg-gray-700 text-orange-500 shadow-sm font-bold'
-                                        : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
-                                        }`}
-                                >
-                                    {opt}
-                                </button>
+                        {/* Sort Pills */}
+                        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                            {sortOptions.map(({ key, icon }) => (
+                                <SortButton key={key} option={key} active={sort === key} onClick={setSort} icon={icon} />
                             ))}
                         </div>
-
-                        {/* Create Button */}
-                        {isLoggedIn && (
-                            <div className="relative z-20">
-                                <button
-                                    onClick={toggleCreateMenu}
-                                    className="btn-icon bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
-                                >
-                                    <i className="fi fi-rr-plus text-xl block"></i>
-                                </button>
-                                <AnimatePresence>
-                                    {showCreateMenu && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            className="absolute right-0 mt-2 w-48 card-elevated overflow-hidden z-50"
-                                        >
-                                            <Link to="/readit/create-post" className="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors">
-                                                <i className="fi fi-rr-edit mr-2 text-blue-500"></i> Create Post
-                                            </Link>
-                                            <Link to="/readit/create-community" className="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm border-t border-gray-100 dark:border-gray-700 transition-colors">
-                                                <i className="fi fi-rr-users mr-2 text-green-500"></i> Create Community
-                                            </Link>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        )}
                     </div>
                 </div>
 
-                {/* POST LIST (Virtualized) */}
-                <div className="min-h-[50vh]">
-                    {isLoading && posts.length === 0 ? (
-                        <>
-                            <PostCardSkeleton />
-                            <PostCardSkeleton />
-                        </>
-                    ) : posts.length > 0 ? (
-                        <div
-                            style={{
-                                height: `${rowVirtualizer.getTotalSize()}px`,
-                                width: '100%',
-                                position: 'relative',
-                            }}
-                        >
-                            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                                const post = posts[virtualRow.index];
-                                return (
-                                    <div
-                                        key={virtualRow.key}
-                                        data-index={virtualRow.index}
-                                        ref={rowVirtualizer.measureElement}
-                                        style={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            width: '100%',
-                                            transform: `translateY(${virtualRow.start}px)`,
-                                        }}
-                                    >
-                                        <ReaditPostCard post={post} />
+                {/* Mobile Sidebar Drawer */}
+                <AnimatePresence>
+                    {isSidebarOpen && (
+                        <div className="fixed inset-0 z-50 md:hidden">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                                onClick={() => setIsSidebarOpen(false)}
+                            />
+                            <motion.div
+                                initial={{ x: '-100%' }}
+                                animate={{ x: 0 }}
+                                exit={{ x: '-100%' }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                                className="absolute left-0 top-0 bottom-0 w-[85%] max-w-sm bg-white dark:bg-gray-900 shadow-2xl overflow-y-auto"
+                            >
+                                {/* Sidebar Header */}
+                                <div className="sticky top-0 bg-gradient-to-r from-orange-500 to-red-500 p-6 z-10">
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="text-2xl font-bold text-white">Readit</h2>
+                                        <button
+                                            onClick={() => setIsSidebarOpen(false)}
+                                            className="p-2 rounded-xl bg-white/20 text-white hover:bg-white/30 transition-colors"
+                                        >
+                                            <i className="fi fi-rr-cross-small text-xl"></i>
+                                        </button>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className="text-center py-10 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
-                            <i className="fi fi-rr-confetti text-4xl text-gray-400 mb-3 block"></i>
-                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">No posts yet</h3>
-                            <p className="text-gray-500 text-sm">Be the first to share something!</p>
+                                    <p className="text-white/80 text-sm mt-1">Discover communities</p>
+                                </div>
+
+                                {/* Quick Links */}
+                                <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+                                    <div className="space-y-2">
+                                        <Link to="/readit" className="flex items-center gap-3 p-3 rounded-xl bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 font-medium">
+                                            <i className="fi fi-rr-home"></i> Home
+                                        </Link>
+                                        {isLoggedIn && (
+                                            <Link to="/readit/create-community" className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors dark:text-white">
+                                                <i className="fi fi-rr-plus-small"></i> Create Community
+                                            </Link>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Popular Communities */}
+                                <div className="p-4">
+                                    <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
+                                        🔥 Popular Communities
+                                    </h3>
+                                    {communitiesLoading ? (
+                                        <SidebarSkeleton />
+                                    ) : popularCommunities.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {popularCommunities.map((c) => (
+                                                <CommunityCard key={c._id} community={c} />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500 text-center py-4">No communities yet</p>
+                                    )}
+                                </div>
+                            </motion.div>
                         </div>
                     )}
+                </AnimatePresence>
 
-                    {/* Bottom Loader */}
-                    {isFetchingMore && (
-                        <div className="py-4 flex justify-center">
-                            <Loader />
-                        </div>
-                    )}
-                </div>
-            </div>
+                {/* Main Content */}
+                <div className="max-w-7xl mx-auto px-4 py-6 relative z-10">
 
-            {/* SIDEBAR (Desktop) */}
-            <div className="hidden md:block w-80 shrink-0">
-                <div className="sticky top-24">
-                    <ReaditSidebar popularCommunities={popularCommunities} isLoggedIn={isLoggedIn} />
-                </div>
-            </div>
+                    {/* Trending Ticker (Desktop only for now) */}
+                    <div className="hidden md:block">
+                        <TrendingTicker communities={popularCommunities} />
+                    </div>
 
-            {/* MOBILE SIDEBAR (Drawer) */}
-            <AnimatePresence>
-                {showMobileSidebar && (
-                    <>
-                        {/* Backdrop */}
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setShowMobileSidebar(false)}
-                            className="fixed inset-0 bg-black/50 z-50 md:hidden backdrop-blur-sm"
-                        />
-                        {/* Drawer */}
-                        <motion.div
-                            initial={{ x: '-100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '-100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed top-0 left-0 h-full w-[80%] max-w-sm bg-white dark:bg-gray-900 z-50 md:hidden shadow-2xl overflow-y-auto p-6"
-                        >
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-bold">Menu</h2>
-                                <button onClick={() => setShowMobileSidebar(false)} className="btn-icon">
-                                    <i className="fi fi-rr-cross text-xl"></i>
-                                </button>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        {/* Feed Column */}
+                        <div className="lg:col-span-8">
+                            {/* Desktop Header */}
+                            <div className="hidden md:block mb-6">
+                                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-lg p-4">
+                                    <div className="flex items-center justify-between">
+                                        {/* Feed Tabs */}
+                                        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+                                            {['Popular Posts', 'Your Feed'].map((tab) => (
+                                                <button
+                                                    key={tab}
+                                                    onClick={() => setActiveTab(tab)}
+                                                    disabled={tab === 'Your Feed' && !isLoggedIn}
+                                                    className={`px-5 py-2.5 rounded-lg font-bold text-sm transition-all ${activeTab === tab
+                                                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                                                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                                        } disabled:opacity-40 disabled:cursor-not-allowed`}
+                                                >
+                                                    {tab}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Sort Options */}
+                                        <div className="flex gap-2">
+                                            {sortOptions.map(({ key, icon }) => (
+                                                <SortButton key={key} option={key} active={sort === key} onClick={setSort} icon={icon} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <ReaditSidebar popularCommunities={popularCommunities} isLoggedIn={isLoggedIn} />
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
 
-        </div>
+                            {/* Create Post CTA */}
+                            <Link
+                                to="/readit/create-post"
+                                className="hidden md:flex items-center gap-4 p-4 mb-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-lg hover:border-orange-300 dark:hover:border-orange-600 transition-all group"
+                            >
+                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                                    <i className="fi fi-rr-edit text-xl"></i>
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">
+                                        Create a post...
+                                    </p>
+                                </div>
+                                <div className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-bold shadow-lg shadow-orange-500/30 group-hover:shadow-xl transition-shadow">
+                                    Post
+                                </div>
+                            </Link>
+
+                            {/* Posts Feed with Pull to Refresh */}
+                            <PullToRefresh onRefresh={handleRefresh}>
+                                <InfiniteScrollFeed
+                                    posts={posts}
+                                    isLoading={isLoading}
+                                    isFetchingMore={isFetchingMore}
+                                    hasMore={hasMore}
+                                    loadMore={loadMore}
+                                />
+                            </PullToRefresh>
+                        </div>
+
+                        {/* Sidebar Column - Desktop */}
+                        <div className="hidden lg:block lg:col-span-4">
+                            <div className="sticky top-[80px] space-y-6">
+                                {/* Popular Communities */}
+                                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-lg overflow-hidden">
+                                    <div className="bg-gradient-to-r from-orange-500 to-red-500 p-4">
+                                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                            <i className="fi fi-rr-flame"></i> Popular Communities
+                                        </h3>
+                                    </div>
+                                    <div className="p-4 space-y-3">
+                                        {communitiesLoading ? (
+                                            <SidebarSkeleton />
+                                        ) : popularCommunities.length > 0 ? (
+                                            popularCommunities.slice(0, 5).map((c) => (
+                                                <CommunityCard key={c._id} community={c} />
+                                            ))
+                                        ) : (
+                                            <div className="text-center py-6">
+                                                <i className="fi fi-rr-users text-4xl text-gray-300 dark:text-gray-700 mb-2"></i>
+                                                <p className="text-gray-500">No communities yet</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <Link
+                                        to="/readit/communities"
+                                        className="block p-4 text-center text-orange-500 hover:text-orange-600 font-bold border-t border-gray-200 dark:border-gray-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+                                    >
+                                        View All Communities →
+                                    </Link>
+                                </div>
+
+                                {/* Create Community CTA */}
+                                {isLoggedIn && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 }}
+                                        className="bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group"
+                                    >
+                                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <i className="fi fi-rr-users-alt text-9xl"></i>
+                                        </div>
+                                        <h3 className="text-xl font-bold mb-2 relative z-10">Start Your Community</h3>
+                                        <p className="text-white/80 text-sm mb-4 relative z-10">Create a space for your interests and connect with like-minded people.</p>
+                                        <Link
+                                            to="/readit/create-community"
+                                            className="block w-full py-3 bg-white text-gray-900 rounded-xl font-bold text-center hover:bg-gray-100 transition-colors relative z-10"
+                                        >
+                                            <i className="fi fi-rr-plus mr-2"></i> Create Community
+                                        </Link>
+                                    </motion.div>
+                                )}
+
+                                {/* Footer Links */}
+                                <div className="text-center text-xs text-gray-400 dark:text-gray-600 space-y-2">
+                                    <p>© {new Date().getFullYear()} Readit by Shums</p>
+                                    <div className="flex flex-wrap justify-center gap-3">
+                                        <Link to="/about" className="hover:text-gray-600 dark:hover:text-gray-400">About</Link>
+                                        <Link to="/privacy" className="hover:text-gray-600 dark:hover:text-gray-400">Privacy</Link>
+                                        <Link to="/terms" className="hover:text-gray-600 dark:hover:text-gray-400">Terms</Link>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* CSS for scrolling ticker */}
+                <style jsx>{`
+                    @keyframes scroll {
+                        0% { transform: translateX(0); }
+                        100% { transform: translateX(-50%); }
+                    }
+                    .animate-scroll {
+                        animation: scroll 30s linear infinite;
+                    }
+                    .animate-scroll:hover {
+                        animation-play-state: paused;
+                    }
+                `}</style>
+            </div>
+        </PageTransition>
     );
 };
 
 export default ReaditHomePage;
+

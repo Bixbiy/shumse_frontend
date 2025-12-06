@@ -27,7 +27,7 @@ const ContactPage = () => {
 
   // SEO metadata
   const meta = useMemo(() => ({
-    title: "Contact & Apply for Editor | Shumse",
+    title: "Contact us & Apply for Editor | Shums",
     description: "Contact us for inquiries, collaborations, or apply to become an editor. Join our professional content team.",
     keywords: "contact, apply editor, blog, news, collaboration, editor application",
     canonical: window.location.href

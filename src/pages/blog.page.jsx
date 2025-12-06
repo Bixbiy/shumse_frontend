@@ -219,7 +219,7 @@ const BlogPage = () => {
               />
 
               <div className="mt-12">
-                <h1 className="text-4xl font-bold mb-4 text-gradient bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                <h1 className="text-4xl font-bold mb-4 text-gradient bg-gradient-to-r from-primary to-primary-800 bg-clip-text text-transparent">
                   {title}
                 </h1>
               </div>
@@ -299,7 +299,7 @@ const BlogPage = () => {
                         <h4 className="font-semibold text-lg mb-2">{similarBlog.title}</h4>
                         <p className="text-gray-600 text-sm mb-2">{similarBlog.des}</p>
                         <Link
-                          to={`/blog/${similarBlog.blog_id}`}
+                          to={`/post/${similarBlog.blog_id}`}
                           className="text-blue-600 hover:underline text-sm"
                         >
                           Read more

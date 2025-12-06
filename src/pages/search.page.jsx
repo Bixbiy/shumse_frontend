@@ -19,17 +19,17 @@ const tabs = [
 // Modern glassmorphism tab style
 const tabClasses = (active) =>
   `px-6 py-2 mx-1 rounded-xl font-semibold transition-all duration-300
-   shadow-md backdrop-blur-md border border-blue-200
+   shadow-md backdrop-blur-md border border-black-200
    ${active
-    ? 'bg-gradient-to-tr from-blue-500/80 to-blue-400/80 text-white scale-105 shadow-lg'
-    : 'bg-white/60 text-blue-700 hover:bg-blue-100/80 hover:text-blue-900'
+    ? 'bg-gradient-to-tr from-primary-600 to-primary-500 text-white scale-105 shadow-lg'
+    : 'bg-white/60 text-primary-700 hover:bg-primary-600 hover:text-white'
   }`;
 
 const SkeletonCard = () => (
   <div className="animate-pulse rounded-2xl bg-gradient-to-br from-blue-100/60 to-white/80 shadow-lg h-56 w-full mb-4" />
 );
 
-const SearchResultCard = React.memo(({ item, activeTab, searchQuery, searchedTag }) => {
+const SearchResultCard = React.memo(({ item, activeTab, searchedTag }) => {
   let content = null;
   const type = activeTab === 'all' ? item.type : activeTab;
   if (type === 'posts' || type === 'post') {
@@ -48,6 +48,8 @@ const SearchResultCard = React.memo(({ item, activeTab, searchQuery, searchedTag
     </motion.div>
   );
 });
+
+SearchResultCard.displayName = 'SearchResultCard';
 
 const useDebounce = (value, delay) => {
   const [debounced, setDebounced] = useState(value);
@@ -121,7 +123,7 @@ const SearchPage = () => {
     } finally {
       if (isMounted.current) setLoading(false);
     }
-  }, [debouncedQuery, activeTab, retryKey]);
+  }, [debouncedQuery, activeTab]);
 
   // Load more results
   const loadMoreResults = async () => {
@@ -154,7 +156,7 @@ const SearchPage = () => {
     isMounted.current = true;
     fetchInitialResults();
     return () => { isMounted.current = false; };
-  }, [activeTab, debouncedQuery, fetchInitialResults]);
+  }, [activeTab, debouncedQuery, fetchInitialResults, retryKey]);
 
   // Accessibility: ARIA for tabs
   const tabListId = "search-tabs";
@@ -172,8 +174,8 @@ const SearchPage = () => {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <span className="bg-gradient-to-r from-blue-500 via-blue-400 to-blue-600 bg-clip-text text-transparent">
-            Results for: <span className="font-black">{search_query}</span>
+          <span className="bg-gradient-to-r from-primary-600  to-primary-500 bg-clip-text font-gelasio text-transparent">
+            Showing  results for: <span className="font-black font-gelasio">{search_query}</span>
           </span>
         </motion.h1>
         {/* Tabs */}
@@ -260,7 +262,6 @@ const SearchPage = () => {
                     <SearchResultCard
                       item={item}
                       activeTab={activeTab}
-                      searchQuery={search_query}
                       searchedTag={searchedTag} // Pass only if tag search
                     />
                   </motion.div>

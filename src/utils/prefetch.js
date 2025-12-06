@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+
 
 /**
  * Prefetches a dynamic import (lazy loaded component)
@@ -10,7 +10,7 @@ export const prefetchRoute = (importFn) => {
     // Execute the import function to trigger the network request
     // The result is cached by the browser/bundler
     try {
-        const componentPromise = importFn();
+        importFn();
         // Optional: Log prefetch for debugging
         // console.log('Prefetching route...', componentPromise);
     } catch (error) {

@@ -8,7 +8,7 @@ const NotFound = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-800 via-purple-600 to-pink-500 flex items-center justify-center p-6">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-600 to-blue-500 flex items-center justify-center p-6">
       {/* Animated overlay for extra visual flair */}
       <motion.div 
         className="absolute inset-0 opacity-30"
@@ -21,7 +21,7 @@ const NotFound = () => {
         <motion.img 
           src={errorImage} 
           alt="404 Error" 
-          className="w-64 md:w-80 mb-6 drop-shadow-2xl rounded-full border-4 border-yellow-500"
+          className="w-64 md:w-80 mb-6 drop-shadow-2xl z-0 rounded-full border-4 border-yellow-500"
           initial={{ opacity: 0, scale: 0.8 }} 
           animate={{ opacity: 1, scale: 1 }} 
           transition={{ duration: 0.6 }}

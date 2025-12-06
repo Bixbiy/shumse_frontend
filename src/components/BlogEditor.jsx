@@ -1,4 +1,4 @@
-import React, { useRef, useState, useContext, useEffect } from "react";
+import React, { useRef, useState, useContext, useEffect, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 import logo from "../imgs/logo.png";
@@ -29,11 +29,12 @@ import SimpleImage from "@editorjs/simple-image";
 import RawTool from "@editorjs/raw";
 import { UserContext } from '../App';
 
-// --- MODIFIED ---
+// Upload image for EditorJS
 const uploadImageFile = async (file) => {
   try {
-    // Destructure 'url' from the response object
-    const { url } = await UploadImage(file);
+    const response = await UploadImage(file);
+    const url = typeof response === 'string' ? response : response.url;
+
     if (url) {
       return { success: 1, file: { url } };
     } else {
@@ -55,9 +56,8 @@ const uploadImageUrl = async (url) => {
 };
 
 const handleYoutubeEmbed = (url) => {
-  // Extract video ID from YouTube URL
   const getYoutubeVideoId = (url) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&?]*).*/;
     const match = url.match(regExp);
     return match && match[2].length === 11 ? match[2] : null;
   };
@@ -78,24 +78,27 @@ const handleYoutubeEmbed = (url) => {
 };
 
 const BlogEditor = () => {
-  const { blog_id } = useParams(); // if editing an existing blog, blog_id comes from the URL
+  const { blog_id } = useParams();
   const {
     blog,
-    blog: { title, banner, des, content, isPublished },
+    blog: { title, banner, des, content, isPublished, tags = [] },
     setBlog,
     textState,
     setTextState,
     editorState,
     setEditorState,
   } = useContext(EditorContext);
+
   const fileInputRef = useRef(null);
   const [previewBanner, setPreviewBanner] = useState(blog.banner || defaultBanner);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const editorRef = useRef(null);
   const { userAuth: { access_token } } = useContext(UserContext);
   const navigate = useNavigate();
+  const autoSaveTimerRef = useRef(null);
 
-
-  // When a blog_id exists, update blog context to include it.
+  // When a blog_id exists, update blog context to include it
   useEffect(() => {
     if (blog_id) {
       setBlog((prev) => ({ ...prev, blog_id }));
@@ -123,7 +126,7 @@ const BlogEditor = () => {
           class: ImageTool,
           config: {
             uploader: {
-              uploadByFile: uploadImageFile, // Uses our modified function
+              uploadByFile: uploadImageFile,
               uploadByUrl: uploadImageUrl,
             },
           },
@@ -157,7 +160,6 @@ const BlogEditor = () => {
         checklist: { class: Checklist, inlineToolbar: true },
         simpleImage: SimpleImage,
         raw: RawTool,
-        // Add custom YouTube block
         youtubeEmbed: {
           class: class YouTubeEmbed {
             static get toolbox() {
@@ -239,23 +241,60 @@ const BlogEditor = () => {
     };
   }, []);
 
-  const handleBannerUpload = (e) => {
+  const handleBannerUpload = async (e) => {
     const img = e.target.files[0];
-    if (img) {
-      const loadingToast = toast.loading("Uploading...");
-      UploadImage(img)
-        .then(({ url }) => {
-          if (url) {
-            toast.dismiss(loadingToast);
-            toast.success("Uploaded 👍");
-            setPreviewBanner(url);
-            setBlog((prev) => ({ ...prev, banner: url }));
-          }
-        })
-        .catch((err) => {
-          toast.dismiss(loadingToast);
-          return toast.error(err);
-        });
+    if (!img) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(img.type)) {
+      return toast.error('Please upload a valid image (JPEG, PNG, or WebP)');
+    }
+
+    // Validate file size (max 10MB)
+    if (img.size > 10 * 1024 * 1024) {
+      return toast.error('Image size should be less than 10MB');
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    // Simulate progress for better UX
+    const progressInterval = setInterval(() => {
+      setUploadProgress((prev) => {
+        const toastId = toast.loading(`Uploading banner... ${Math.min(prev + 10, 90)}%`);
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          toast.dismiss(toastId);
+          return 90;
+        }
+        toast.dismiss(toastId);
+        return prev + 10;
+      });
+    }, 200);
+
+    try {
+      // aws.jsx returns either string or {url: string}
+      const response = await UploadImage(img);
+      const url = typeof response === 'string' ? response : response.url;
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      if (url) {
+        toast.success('Banner uploaded successfully! 👍');
+        setPreviewBanner(url);
+        setBlog((prev) => ({ ...prev, banner: url }));
+      } else {
+        throw new Error('No URL returned from upload');
+      }
+    } catch (err) {
+      clearInterval(progressInterval);
+      console.error('Banner upload error:', err);
+      toast.error(err.message || 'Failed to upload banner. Please try again.');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -278,13 +317,13 @@ const BlogEditor = () => {
   };
 
   const handlePublishEvent = () => {
-    if (!banner.length) {
+    if (!banner || !banner.length) {
       return toast.error("Upload a blog banner to publish it");
     }
-    if (!title.length) {
+    if (!title || !title.length) {
       return toast.error("Write blog title to publish it");
     }
-    if (textState.blocks.length === 0 && !des.length) {
+    if (!textState?.blocks?.length && !des?.length) {
       return toast.error("Write something in your blog to publish it");
     }
 
@@ -296,101 +335,243 @@ const BlogEditor = () => {
       return;
     }
 
-    if (!title.length) {
+    if (!title || !title.length) {
       return toast.error("Write blog title before saving it as a draft");
     }
 
     const loadingToast = toast.loading("Saving Draft...");
     e.target.classList.add("disable");
 
-    if (textState.blocks.length) {
-      // Ensure content is an array for consistency with backend expectation if needed
-      // But usually content is just the object. Let's check how it's used.
-      // The original code set content: data.
-      // Let's assume content is the object.
+    const blogObj = {
+      title,
+      banner: banner || '',
+      des: des || '',
+      content: textState?.blocks?.length ? [textState] : [{ blocks: [] }], // Wrap in array for backend
+      tags: tags || [],
+      draft: true,
+    };
 
-      const blogObj = {
-        title,
-        banner,
-        des,
-        content: textState, // Pass the object directly
-        tags,
-        draft: true,
-      };
+    api.post(
+      "/create-post",
+      { ...blogObj, id: blog_id }
+    )
+      .then(() => {
+        e.target.classList.remove("disable");
+        toast.dismiss(loadingToast);
+        toast.success("Draft saved successfully! 👍");
 
-      api.post(
-        "/create-blog",
-        { ...blogObj, id: blog_id }
-      )
-        .then(() => {
-          e.target.classList.remove("disable");
-          toast.dismiss(loadingToast);
-          toast.success("Saved 👍");
-
-          setTimeout(() => {
-            navigate("/dashboard/blogs?tab=draft");
-          }, 500);
-        })
-        .catch(({ response }) => {
-          e.target.classList.remove("disable");
-          toast.dismiss(loadingToast);
-          return toast.error(response.data.error);
-        });
-    }
+        setTimeout(() => {
+          navigate("/dashboard/blogs?tab=draft");
+        }, 500);
+      })
+      .catch(({ response }) => {
+        e.target.classList.remove("disable");
+        toast.dismiss(loadingToast);
+        const errorMsg = response?.data?.error || 'Failed to save draft';
+        return toast.error(errorMsg);
+      });
   };
+
+  // Autosave functionality
+  const autoSave = useCallback(() => {
+    if (!title?.length || !textState?.blocks?.length) return;
+
+    const blogObj = {
+      title,
+      banner: banner || '',
+      des: des || '',
+      content: [textState], // Wrap in array for backend
+      tags: tags || [],
+      draft: true,
+    };
+
+    api.post("/create-post", { ...blogObj, id: blog_id })
+      .then(() => {
+        toast.success('Auto-saved ✓', { duration: 1000 });
+      })
+      .catch((err) => {
+        console.error('Autosave failed:', err);
+      });
+  }, [title, banner, des, textState, tags, blog_id]);
+
+  // Setup autosave timer
+  useEffect(() => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    // Autosave every 30 seconds if there's content
+    if (title?.length && textState?.blocks?.length) {
+      autoSaveTimerRef.current = setTimeout(() => {
+        autoSave();
+      }, 30000);
+    }
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [title, textState, autoSave]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + S for save draft
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        const saveButton = document.querySelector('.save-draft-btn');
+        if (saveButton && !saveButton.classList.contains('disable')) {
+          saveButton.click();
+        }
+      }
+      // Ctrl/Cmd + P for publish
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        handlePublishEvent();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [banner, title, textState, des]);
 
   return (
     <>
-      <nav className="navbar">
+      {/* Desktop/Mobile Navbar */}
+      <nav className="navbar sticky top-0 z-50 bg-white shadow-sm">
         <Link to="/" className="flex-none w-10">
           <img src={logo} alt="logo" />
         </Link>
         <p className="max-md:hidden text-black line-clamp-1 w-full">
-          {title.length ? title : "New Blog"}
+          {title?.length ? title : "New Blog"}
         </p>
 
-        <div className="flex gap-4 ml-auto">
-          <button className="btn-dark py-2" onClick={handlePublishEvent}>
+        {/* Desktop Actions */}
+        <div className="hidden md:flex gap-4 ml-auto">
+          <button
+            className="btn-dark py-2 px-6"
+            onClick={handlePublishEvent}
+            title="Publish (Ctrl+P)"
+          >
             Publish
           </button>
-          <button className="btn-light py-2" onClick={handleSaveDraft}>
+          <button
+            className="btn-light py-2 px-6 save-draft-btn"
+            onClick={handleSaveDraft}
+            title="Save Draft (Ctrl+S)"
+          >
             Save Draft
           </button>
         </div>
+
+        {/* Mobile Menu Icon */}
+        <button className="md:hidden ml-auto text-2xl">
+          <i className="fi fi-rr-menu-dots-vertical"></i>
+        </button>
       </nav>
-      <Toaster />
+
+      {/* Mobile Bottom Action Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-grey p-4 flex gap-3 z-50 safe-area-bottom">
+        <button
+          className="flex-1 btn-dark py-3 text-sm font-medium"
+          onClick={handlePublishEvent}
+        >
+          Publish
+        </button>
+        <button
+          className="flex-1 btn-light py-3 text-sm font-medium save-draft-btn"
+          onClick={handleSaveDraft}
+        >
+          Save Draft
+        </button>
+      </div>
+
+      <Toaster position="top-center" />
+
       <AnimationWrapper>
-        <section>
-          <div className="mx-auto max-w-[900px] w-full">
-            <div className="relative aspect-video hover:opacity-80 bg-white border-4 border-grey">
-              <label htmlFor="uploadBanner">
+        <section className="pb-24 md:pb-8">
+          <div className="mx-auto max-w-[900px] w-full px-4 md:px-6">
+            {/* Banner Upload Section */}
+            <div className="relative aspect-video bg-white border-4 border-grey rounded-lg overflow-hidden group">
+              <label
+                htmlFor="uploadBanner"
+                className={`cursor-pointer block w-full h-full relative ${isUploading ? 'pointer-events-none' : ''}`}
+              >
                 <img
                   src={previewBanner}
-                  alt="Banner"
-                  className="z-20"
+                  alt="Blog Banner"
+                  className="w-full h-full object-cover transition-opacity duration-200 group-hover:opacity-80"
                   onError={handleError}
                 />
+
+                {/* Upload Overlay */}
+                {!isUploading && (
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white text-center p-4">
+                      <i className="fi fi-rr-camera text-4xl md:text-5xl mb-2 block"></i>
+                      <p className="text-sm md:text-base font-medium">Click to upload banner</p>
+                      <p className="text-xs mt-1 opacity-80">Recommended: 1920x1080px (Max 10MB)</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload Progress */}
+                {isUploading && (
+                  <div className="absolute inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center p-6">
+                    <div className="w-full max-w-md">
+                      <div className="mb-4 text-white text-center">
+                        <div className="animate-pulse mb-3">
+                          <i className="fi fi-rr-upload text-4xl md:text-5xl"></i>
+                        </div>
+                        <p className="text-lg md:text-xl font-semibold mb-1">
+                          Uploading Banner
+                        </p>
+                        <p className="text-2xl md:text-3xl font-bold text-blue-400">
+                          {uploadProgress}%
+                        </p>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden shadow-lg">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-blue-600 h-full transition-all duration-300 ease-out"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <input
                   id="uploadBanner"
                   type="file"
-                  accept=".png, .jpg, .jpeg"
+                  accept=".png, .jpg, .jpeg, .webp"
                   hidden
                   onChange={handleBannerUpload}
+                  disabled={isUploading}
+                  ref={fileInputRef}
                 />
               </label>
             </div>
 
+            {/* Title Input */}
             <textarea
-              defaultValue={title}
+              value={title || ''}
               placeholder="Blog Title"
-              className="text-4xl font-medium w-full h-20 outline-none resize-none mt-10 leading-tight placeholder:opacity-40 bg-white"
+              className="text-2xl md:text-4xl font-medium w-full h-auto min-h-[60px] md:min-h-[80px] outline-none resize-none mt-6 md:mt-10 leading-tight placeholder:opacity-40 bg-white focus:placeholder:opacity-60 transition-all"
               onKeyDown={handleTitleKeyDown}
               onChange={handleTitleChange}
+              maxLength={200}
             ></textarea>
+
+            {/* Character Counter */}
+            <p className="text-xs md:text-sm text-dark-grey text-right -mt-2">
+              {title?.length || 0}/200 characters
+            </p>
 
             <hr className="w-full opacity-10 my-5" />
 
-            <div id="text-editor" className="font-gelasio"></div>
+            {/* Editor Container */}
+            <div id="text-editor" className="font-gelasio min-h-[400px] prose max-w-none"></div>
           </div>
         </section>
       </AnimationWrapper>

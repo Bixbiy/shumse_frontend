@@ -19,6 +19,7 @@ import HomePage from "./pages/home.page";
 import NotFound from "./pages/404.page";
 import SEO from "./common/seo";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import Portfolio from "./pages/Portfolio";
 
 // LAZY LOADED PAGES (loaded on demand)
 const ProfilePage = lazy(() => import("./pages/profile.page"));
@@ -110,32 +111,32 @@ const App = () => {
                                 <RouteErrorBoundary>
                                     <Routes>
                                         {/* Routes WITH AppLayout (Navbar/BottomNav) */}
-                                       
-                                            <Route index element={<><Navbar/><HomePage /><Footer/></>} />
-                                            <Route path="contact" element={<ContactPage />} />
-                                            <Route path="search/:search_query" element={<SearchPage />} />
-                                            <Route path="search/tag/:search_query" element={<SearchPage />} />
-                                            <Route path="user/:id" element={<ProfilePage />} />
-                                            <Route path="post/:blog_id" element={<BlogPage />} />
 
-                                            {/* Story Routes */}
-                                            <Route path="stories" element={<StoriesList />} />
-                                            <Route path="stories/trending" element={<StoriesList />} />
-                                            <Route path="story/:story_id" element={<StoryViewerModal />} />
+                                        <Route index element={<><Navbar /><HomePage /><Footer /></>} />
+                                        <Route path="contact" element={<ContactPage />} />
+                                        <Route path="search/:search_query" element={<SearchPage />} />
+                                        <Route path="search/tag/:search_query" element={<SearchPage />} />
+                                        <Route path="user/:id" element={<ProfilePage />} />
+                                        <Route path="post/:blog_id" element={<BlogPage />} />
 
-                                            {/* --- OPTIMIZED READIT ROUTES --- */}
-                                            <Route path="readit">
-                                                <Route path="home" element={<ReaditHomePage />} />
-                                                <Route path="c/:communityName" element={<ReaditCommunityPage />} />
-                                                <Route path="create-community" element={<ReaditCreateCommunityPage />} />
-                                                <Route path="create-post" element={<ReaditCreatePostPage />} />
-                                                <Route path="post/:postId" element={<ReaditPostPage />} />
-                                                <Route path="c/:communityName/submit" element={<ReaditSubmitPage />} />
-                                                <Route index element={<ReaditHomePage />} />
-                                            </Route>
+                                        {/* Story Routes */}
+                                        <Route path="stories" element={<StoriesList />} />
+                                        <Route path="stories/trending" element={<StoriesList />} />
+                                        <Route path="story/:story_id" element={<StoryViewerModal />} />
 
-                                            <Route path="*" element={<NotFound />} />
-                                        
+                                        {/* --- OPTIMIZED READIT ROUTES --- */}
+                                        <Route path="readit">
+                                            <Route path="home" element={<ReaditHomePage />} />
+                                            <Route path="c/:communityName" element={<ReaditCommunityPage />} />
+                                            <Route path="create-community" element={<ReaditCreateCommunityPage />} />
+                                            <Route path="create-post" element={<ReaditCreatePostPage />} />
+                                            <Route path="post/:postId" element={<ReaditPostPage />} />
+                                            <Route path="c/:communityName/submit" element={<ReaditSubmitPage />} />
+                                            <Route index element={<ReaditHomePage />} />
+                                        </Route>
+
+                                        <Route path="*" element={<NotFound />} />
+
 
                                         {/* Dashboard Routes */}
                                         <Route path="/dashboard" element={<SideNav />}>
@@ -156,6 +157,9 @@ const App = () => {
                                         <Route path="/story-editor" element={<StoryEditor />} />
                                         <Route path="/signin" element={<UserAuthForm type="sign-in" />} />
                                         <Route path="/signup" element={<UserAuthForm type="sign-up" />} />
+
+                                        {/* Portfolio Route - Custom navbar/footer */}
+                                        <Route path="/portfolio" element={<Portfolio />} />
                                     </Routes>
                                 </RouteErrorBoundary>
                             </Suspense>

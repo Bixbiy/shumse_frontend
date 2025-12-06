@@ -108,7 +108,7 @@ const HomePage = () => {
     useEffect(() => {
         fetchBlogs(null, 1);
         fetchTrendingPosts();
-    }, []);
+    }, [fetchBlogs, fetchTrendingPosts]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -160,11 +160,11 @@ const HomePage = () => {
     const websiteSchema = {
         "@context": "https://schema.org",
         "@type": "WebSite",
-        "name": "Shumse",
-        "url": "https://shumse.com",
+        "name": "Shums",
+        "url": "https://shums.com",
         "potentialAction": {
             "@type": "SearchAction",
-            "target": "https://shumse.com/search/{search_term_string}",
+            "target": "https://shums.com/search/{search_term_string}",
             "query-input": "required name=search_term_string"
         }
     };
@@ -189,8 +189,8 @@ const HomePage = () => {
                                 fetchBlogs(null, 1);
                             }}
                             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${!selectedCategory
-                                    ? "bg-primary text-white shadow-lg shadow-primary/30"
-                                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
+                                ? "bg-primary text-white shadow-lg shadow-primary/30"
+                                : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
                                 }`}
                         >
                             All
@@ -201,8 +201,8 @@ const HomePage = () => {
                                 onClick={loadPostByCat}
                                 key={i}
                                 className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${selectedCategory === category
-                                        ? "bg-primary text-white shadow-lg shadow-primary/30"
-                                        : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
+                                    ? "bg-primary text-white shadow-lg shadow-primary/30"
+                                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
                                     }`}
                             >
                                 {category}
@@ -276,8 +276,8 @@ const HomePage = () => {
                                             onClick={loadPostByCat}
                                             key={i}
                                             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${selectedCategory === category
-                                                    ? "bg-primary text-white shadow-md"
-                                                    : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+                                                ? "bg-primary text-white shadow-md"
+                                                : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
                                                 }`}
                                         >
                                             {category}

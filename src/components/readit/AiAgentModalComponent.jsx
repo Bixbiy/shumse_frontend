@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Loader from '../Loader';
-import api from '../../common/api'; // Use centralized API
+import toast from 'react-hot-toast';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const AIAgentModal = ({ mode, postContext, onClose, onGenerate }) => {
     const [prompt, setPrompt] = useState('');
@@ -20,24 +21,81 @@ const AIAgentModal = ({ mode, postContext, onClose, onGenerate }) => {
         setError('');
 
         try {
-            // SECURITY FIX: Call backend instead of direct Gemini API
-            const { data } = await api.post('/ai/generate', {
-                prompt: mode === 'post' ? prompt : null,
-                context: mode === 'comment' ? postContext : null,
-                mode: mode
-            });
+            // Get API key from environment
+            const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+            if (!apiKey) {
+                throw new Error('Gemini API key not found. Please add VITE_GEMINI_API_KEY to your .env file');
+            }
+
+            // Initialize Gemini AI
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+            let fullPrompt = '';
 
             if (mode === 'post') {
-                // Backend should return JSON object for posts
-                onGenerate(data.title, data.content);
+                // Generate both title and content for a post
+                fullPrompt = `You are a helpful assistant that creates engaging community posts. Create a post about: "${prompt}". 
+                
+Please respond with ONLY a valid JSON object in this exact format (no markdown, no code blocks):
+{"title": "catchy title here", "content": "detailed content here"}
+
+The title should be catchy and under 200 characters. The content should be informative, engaging, and 2-3 paragraphs long.`;
             } else {
-                // Backend returns string for comments
-                onGenerate(data.content);
+                // Generate comment reply
+                fullPrompt = `You are a helpful assistant that creates thoughtful comments on posts. 
+                
+Post Title: "${postContext.title}"
+Post Content: "${postContext.content || 'No additional content'}"
+
+Please write a thoughtful, relevant comment or reply to this post. Keep it conversational, friendly, and under 300 words. Respond with ONLY the comment text, no extra formatting.`;
+            }
+
+            const result = await model.generateContent(fullPrompt);
+            const response = await result.response;
+            const text = response.text();
+
+            if (mode === 'post') {
+                try {
+                    // Clean the response - remove markdown code blocks if present
+                    let cleanText = text.trim();
+                    if (cleanText.startsWith('```json')) {
+                        cleanText = cleanText.replace(/```json\n?/g, '').replace(/```\n?$/g, '');
+                    } else if (cleanText.startsWith('```')) {
+                        cleanText = cleanText.replace(/```\n?/g, '').replace(/```\n?$/g, '');
+                    }
+
+                    const parsed = JSON.parse(cleanText);
+                    onGenerate(parsed.title, parsed.content);
+                    toast.success('AI content generated!');
+                    onClose();
+                } catch (parseError) {
+                    console.error('Failed to parse AI response:', text);
+                    // Fallback: try to extract title and content manually
+                    const titleMatch = text.match(/"title":\s*"([^"]+)"/);
+                    const contentMatch = text.match(/"content":\s*"([^"]+)"/);
+
+                    if (titleMatch && contentMatch) {
+                        onGenerate(titleMatch[1], contentMatch[1]);
+                        toast.success('AI content generated!');
+                        onClose();
+                    } else {
+                        throw new Error('Could not parse AI response. Please try again.');
+                    }
+                }
+            } else {
+                // For comments, just use the text directly
+                onGenerate(text.trim());
+                toast.success('AI comment generated!');
+                onClose();
             }
 
         } catch (err) {
             console.error("AI generation failed:", err);
-            setError(err.response?.data?.error || "Failed to generate content. Please try again.");
+            const errorMessage = err.message || "Failed to generate content. Please try again.";
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }

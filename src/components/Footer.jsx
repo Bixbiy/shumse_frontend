@@ -21,13 +21,13 @@ const siteLinks = [
 ];
 
 const Footer = () => (
-    <footer className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white  pb-6 px-4 ">
+    <footer className="bg-gradient-to-r from-primary-700 to-primary-600 text-white border-1 border-black pb-6 px-4 ">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:justify-between gap-10">
             {/* Logo and Address */}
             <div className="flex-1 min-w-[220px]">
                 <div className="flex items-center gap-3 mb-4">
                     <img src="/logo192.png" alt="Spread Logo" className="w-10 h-10 rounded-full shadow-lg" />
-                    <span className="text-2xl font-bold tracking-tight">Spread</span>
+                    <span className="text-2xl font-bold tracking-tight">Shums.com</span>
                 </div>
                 <p className="text-sm text-gray-200 mb-2">
 
@@ -36,7 +36,7 @@ const Footer = () => (
                 <p className="text-sm text-gray-200 mb-2">
                     Phone: <a href="tel:+923283126920" className="hover:underline">+92 328 3126920</a>
                 </p>
-                <p className="text-xs text-gray-400 mt-4">&copy; {new Date().getFullYear()} Shumse. All rights reserved.</p>
+                <p className="text-xs text-gray-400 mt-4">&copy; {new Date().getFullYear()} Shums. All rights reserved.</p>
             </div>
 
             {/* Site Links */}
@@ -67,9 +67,9 @@ const Footer = () => (
                 </div>
             </div>
         </div>
-        <div className="mt-10 border-t border-white/10 pt-6 text-center text-xs text-gray-400">
-            Built with <span className="text-pink-400">♥</span> by Shumse Team &mdash; Follow us on
-            <a href="https://twitter.com/" target="_blank" rel="noopener noreferrer" className="ml-1 hover:underline text-blue-300">X</a>
+        <div className="mt-10 border-t border-white/20 pt-6 text-center text-xs text-gray-900">
+           <Link className="hover:underline" to="/portfolio"> Built with <span className="text-pink-800  ">♥</span> by Bilal Ahmad </Link> &mdash; Follow me on
+            <a href="https://twitter.com/" target="_blank" rel="noopener noreferrer" className="ml-1 hover:underline text-xxl text-indigo-800">X</a>
         </div>
     </footer>
 );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { UserContext } from "../App";
 import UserNavigationPanel from "./UserNavigation";
 import api from "../common/api";
@@ -21,7 +21,7 @@ const Navbar = () => {
   const { userAuth, setUserAuth } = useContext(UserContext);
   const { access_token, profile_img, new_notification_available } = userAuth || {};
 
-  
+
 
   const [searchBoxVisibility, setSearchBoxVisibility] = useState(false);
   const [userNavPanel, setUserNavPanel] = useState(false);
@@ -144,7 +144,7 @@ const Navbar = () => {
   return (
     <>
       <LazyMotion features={domAnimation}>
-        <div className={`z-10 sticky top-0 w-full transition-all duration-300 ${isScrolled ? 'bg-white/80 dark:bg-dark-grey/80 backdrop-blur-md border-b border-gray-100 dark:border-grey' : 'bg-white dark:bg-dark-grey'}`}>
+        <div className={`z-50 sticky top-0 w-full transition-all duration-300 ${isScrolled ? 'bg-white/80 dark:bg-dark-grey/80 backdrop-blur-md border-b border-gray-100 dark:border-grey' : 'bg-white dark:bg-dark-grey'}`}>
           <motion.nav
             initial={{ y: -10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -153,29 +153,30 @@ const Navbar = () => {
           >
             {/* Logo */}
             <Link to="/" className="w-12 block flex-none">
-            <h1 className=" md:flex gap-2 items-center px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white rounded-full text-sm font-large shadow-sm hover:shadow-md transition-all transform hover:-translate-y-0.5">Read</h1>
-            {/* <img src={site_logo} alt="Readit" className="w-cover" /> */}
+              <h1 className=" md:flex gap-2 items-center py-2  bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white rounded-full text-sm font-large shadow-sm hover:shadow-md transition-all transform hover:-translate-y-0.5">Shums</h1>
+              {/* <img src={site_logo} alt="Readit" className="w-cover" /> */}
             </Link>
 
             {/* Desktop Search Bar Container */}
             <div className="absolute bg-white dark:bg-dark-grey w-full left-0 top-full mt-0.5 border-b border-grey py-4 px-[5vw] md:border-0 md:block md:relative md:inset-0 md:p-0 md:w-auto md:show pointer-events-auto transition-all duration-300">
               <div className="relative">
                 <input
-                  type="search"
-                  placeholder="Search..."
-                  ref={desktopSearchRef}
-                  className="w-full md:w-auto bg-gray-100 dark:bg-grey p-4 pl-6 pr-[12%] md:pr-6 rounded-full placeholder:text-dark-grey/50 md:pl-12 outline-none focus:bg-transparent transition-all border border-transparent focus:border-gray-200 dark:focus:border-grey"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  onKeyDown={handleSearchEnter}
-                />
+                    type="search"
+                    placeholder="Search..."
+                    ref={desktopSearchRef}
+                    className="w-full md:w-auto bg-gray-100 dark:bg-grey p-4 pl-6 pr-[12%] md:pr-6 rounded-full placeholder:text-dark-grey/50 md:pl-12 outline-none focus:bg-transparent transition-all border border-transparent focus:border-gray-200 dark:focus:border-grey"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onKeyDown={handleSearchEnter}
+                  />
 
-                {/* Search Button (Restored from error location) */}
-                <button
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-primary transition-colors"
-                  aria-label="Submit search"
-                  onClick={() => handleSearchEnter({ key: 'Enter', preventDefault: () => { } })}
-                >
+                  {/* Search Button (Restored from error location) */}
+                  <button
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-primary transition-colors"
+                    aria-label="Submit search"
+                    onClick={() => handleSearchEnter({ key: 'Enter', preventDefault: () => { } })}
+                  >
+                    
                   <i className="fi fi-rr-search text-xl"></i>
                 </button>
               </div>
@@ -220,8 +221,12 @@ const Navbar = () => {
                 <i className="fi fi-rs-search text-xl"></i>
               </button>
 
-              <ThemeToggleButton />
-
+              {/* <ThemeToggleButton /> */}
+<NavLink to="/games" className={({ isActive }) => `flex items-center justify-center w-10 h-10 md:w-auto md:px-3 md:py-2 rounded-full hover:bg-gray-100 dark:hover:bg-grey text-dark-grey dark:text-light-grey transition-colors ${isActive ? 'text-primary dark:text-primary bg-primary/10' : ''}`}
+                aria-label="Games by Shums">
+                    <i className="fi fi-rr-console-alt text-xl"></i>
+                <span className="text-sm font-medium hidden md:inline ml-2">Games</span>
+                </NavLink>
               <NavLink
                 to="/readit"
                 className={({ isActive }) => `flex items-center justify-center w-10 h-10 md:w-auto md:px-3 md:py-2 rounded-full hover:bg-gray-100 dark:hover:bg-grey text-dark-grey dark:text-light-grey transition-colors ${isActive ? 'text-primary dark:text-primary bg-primary/10' : ''}`}
@@ -277,8 +282,7 @@ const Navbar = () => {
               ) : (
                 <>
                   <Link to="/signin" className="btn-dark text-sm hidden md:block hover:bg-black/80 transition-colors">Sign In</Link>
-                  <Link to="/signup" className="btn-light text-sm hidden md:block hover:bg-gray-200 transition-colors">Sign Up</Link>
-                </>
+</>
               )}
             </div>
           </motion.nav>
@@ -310,7 +314,7 @@ const Navbar = () => {
           </AnimatePresence>
         </div>
       </LazyMotion>
-      <div id="main-content" className="  focus:outline-none" tabIndex="-1"><Outlet /></div>
+
     </>
   );
 };

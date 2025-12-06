@@ -1,58 +1,29 @@
 /*
- * NEW FILE
  * Path: src/pages/ReaditSubmitPage.jsx
  */
-import  { useState, useContext, useRef, useEffect } from 'react';
+import { useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserContext } from '../App';
 import { Helmet } from 'react-helmet-async';
-import { useQueryClient } from '@tanstack/react-query';
 import InPageNavigation from '../components/InPageNavigation';
-import { UploadImage } from '../common/aws'; // Using your existing uploader
+import { UploadImage } from '../common/aws';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import axiosInstance from '../common/api';
+import Loader from '../components/Loader';
 
 const API_DOMAIN = import.meta.env.VITE_SERVER_DOMAIN + "/api/v1/readit";
-
-// New Mutation Hook (add this to src/hooks/useReaditApi.js)
-// For brevity, I'll define it here, but it should be moved to your hook file.
-const useCreateReaditPost = () => {
-    const queryClient = useQueryClient();
-    const { userAuth } = useContext(UserContext);
-
-    return useMutation({
-        mutationFn: ({ communityName, postData }) =>
-            axios.post(`${API_DOMAIN}/c/${communityName}/posts`, postData, {
-                headers: { 'Authorization': `Bearer ${userAuth.access_token}` }
-            }),
-        onSuccess: (data, variables) => {
-            // Invalidate the post list for the community
-            queryClient.invalidateQueries({ queryKey: ['communityPosts', variables.communityName] });
-            toast.success("Post created!");
-        },
-        onError: (err) => {
-            toast.error(err.response?.data?.error || "Failed to create post.");
-        }
-    });
-};
-
 
 const ReaditSubmitPage = () => {
     const { communityName } = useParams();
     const navigate = useNavigate();
-    const { userAuth } = useContext(userContext);
-
-    // Refs for nav component
-    const navRef = useRef();
-    const navOffsetRef = useRef(0);
+    const { userAuth } = useContext(UserContext);
 
     const [postType, setPostType] = useState('text');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [url, setUrl] = useState('');
     const [image, setImage] = useState('');
-    
-    const { mutate: createPost, isLoading } = useCreateReaditPost();
+    const [isLoading, setIsLoading] = useState(false);
 
     // Set the post type state when the tab changes
     const handleTabChange = (btn, i) => {
@@ -75,7 +46,7 @@ const ReaditSubmitPage = () => {
         }
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!title.trim()) {
             return toast.error("A title is required.");
         }
@@ -94,12 +65,17 @@ const ReaditSubmitPage = () => {
             image: postType === 'image' ? image : undefined,
         };
 
-        createPost({ communityName, postData }, {
-            onSuccess: (data) => {
-                // Navigate to the new post's page
-                navigate(`/readit/post/${data.data._id}`);
-            }
-        });
+        setIsLoading(true);
+        try {
+            const { data } = await axiosInstance.post(`/readit/c/${communityName}/posts`, postData);
+            toast.success("Post created!");
+            navigate(`/readit/post/${data._id}`);
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.error || "Failed to create post.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -109,10 +85,9 @@ const ReaditSubmitPage = () => {
             </Helmet>
             <h1 className="text-2xl font-bold mb-2">Create a Post</h1>
             <p className="text-dark-grey mb-4">Posting to <span className="font-semibold">c/{communityName}</span></p>
-            
+
             <div className="bg-white dark:bg-grey-dark rounded-lg shadow-md border border-grey dark:border-grey-dark">
                 <InPageNavigation
-                    ref={navRef}
                     routes={['Text', 'Image', 'Link']}
                     defaultIndex={0}
                     onChange={handleTabChange}
@@ -137,7 +112,7 @@ const ReaditSubmitPage = () => {
                             className="input-box h-40"
                         />
                     )}
-                    
+
                     {postType === 'image' && (
                         <div className="border border-dashed border-grey p-4 rounded-md text-center">
                             <input type="file" id="upload-image-input" accept="image/*" onChange={handleImageUpload} className="hidden" />
@@ -147,7 +122,7 @@ const ReaditSubmitPage = () => {
                             {image && <img src={image} alt="Post preview" className="w-full rounded-md mt-4" />}
                         </div>
                     )}
-                    
+
                     {postType === 'link' && (
                         <input
                             type="url"
@@ -159,8 +134,13 @@ const ReaditSubmitPage = () => {
                     )}
 
                     <div className="flex justify-end mt-4">
-                        <button onClick={handleSubmit} disabled={isLoading} className="btn-dark px-8">
-                            {isLoading ? 'Posting...' : 'Post'}
+                        <button onClick={handleSubmit} disabled={isLoading} className="btn-dark px-8 flex items-center gap-2">
+                            {isLoading ? (
+                                <>
+                                    <Loader />
+                                    <span>Posting...</span>
+                                </>
+                            ) : 'Post'}
                         </button>
                     </div>
                 </div>

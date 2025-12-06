@@ -36,7 +36,7 @@ const InPageNavigation = ({ routes, defaultHidden = [], children, onRouteChange 
 
   return (
     <>
-      <div className="relative mb-3 bg-white border-b border-dark-grey border-opacity-40 flex flex-nowrap overflow-hidden">
+      <div className="relative dark:bg-dark-grey-800 dark:text-white mb-3 bg-white border-b border-dark-grey border-opacity-40 flex flex-nowrap overflow-hidden">
         <div className="flex flex-nowrap items-center space-x-1 md:space-x-2">
           {routes.map((route, i) => (
             <button

@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://shumse.com/sitemap.xml
+Sitemap: https://shums.com/sitemap.xml

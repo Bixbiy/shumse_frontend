@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: "Shumse | Modern Blogging Platform",
-        short_name: "Shumse",
-        description: "Join the community of writers and readers on Shumse.",
+        name: "Shums | Modern Blogging,Community,Chatting and Gaming Platform",
+        short_name: "Shums",
+        description: "Join the community of writers, gamers and readers on Shums.",
         start_url: "/",
         display: "standalone",
         background_color: "#0f172a",
@@ -107,6 +107,6 @@ export default defineConfig({
     ],
   },
   server: {
-    port: 8080,
+    port: 3000,
   }
 });

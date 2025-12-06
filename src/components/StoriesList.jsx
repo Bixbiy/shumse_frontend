@@ -110,7 +110,7 @@ export default function StoriesList() {
   return (
     <>
       <Helmet>
-        <title>{title} | Shumse</title>
+        <title>{title} | Shums</title>
         <meta name="description" content={`Stay updated with the ${title.toLowerCase()}. Fast, SEO-optimized.`} />
       </Helmet>
 

@@ -1,7 +1,7 @@
 // manage-blogs.page.jsx
 
 import api from "../common/api";
-import { useContext, useState, useEffect, useCallback } from "react";
+import { useContext, useState, useEffect, useCallback, useRef } from "react";
 import { UserContext } from "../App";
 import { FilterPagination } from "../common/filter-pagination-data";
 import { Toaster } from "react-hot-toast";
@@ -55,6 +55,16 @@ const ManageBlog = () => {
     const [isLoadingStories, setIsLoadingStories] = useState(false);
     const [errorStories, setErrorStories] = useState(null);
 
+    const publishedDataRef = useRef(publishedData);
+    const draftDataRef = useRef(draftData);
+    const storyDataRef = useRef(storyData);
+
+    useEffect(() => {
+        publishedDataRef.current = publishedData;
+        draftDataRef.current = draftData;
+        storyDataRef.current = storyData;
+    }, [publishedData, draftData, storyData]);
+
     //
     // ─── Fetch Functions ────────────────────────────────────────────────────────────
     //
@@ -77,7 +87,7 @@ const ManageBlog = () => {
 
                 // Assume FilterPagination returns an object with { results, page, totalPages, totalDocs }
                 const formatted = await FilterPagination({
-                    state: publishedData,
+                    state: publishedDataRef.current,
                     arr_data: data.blogs,
                     page: pageNumber,
                     user: access_token,
@@ -114,7 +124,7 @@ const ManageBlog = () => {
                 );
 
                 const formatted = await FilterPagination({
-                    state: draftData,
+                    state: draftDataRef.current,
                     arr_data: data.blogs,
                     page: pageNumber,
                     user: access_token,
