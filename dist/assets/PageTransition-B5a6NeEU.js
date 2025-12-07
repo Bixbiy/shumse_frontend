@@ -1,1 +1,0 @@
-import{j as i,m as a}from"./index-vd7Ycuse.js";const t={initial:{opacity:0,y:20},animate:{opacity:1,y:0,transition:{duration:.3,ease:[.25,.46,.45,.94]}},exit:{opacity:0,y:-10,transition:{duration:.2}}},n=({children:n,className:e=""})=>i.jsx(a.div,{variants:t,initial:"initial",animate:"animate",exit:"exit",className:e,children:n});export{n as P};

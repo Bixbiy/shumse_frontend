@@ -206,7 +206,7 @@ const ReaditPostPage = () => {
                         "interactionStatistic": [
                             {
                                 "@type": "InteractionCounter",
-                                "@type": "LikeAction",
+                                "interactionType": "LikeAction",
                                 "userInteractionCount": localPost.score || 0
                             },
                             {
