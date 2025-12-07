@@ -128,16 +128,17 @@ const CommentsContainer = React.memo(() => {
 
         const handleNewComment = (newComment) => {
             if (newComment.blog_id === blogId && !newComment.isReply) {
-                setCommentsState(prev => ({
-                    ...prev,
-                    comments: [newComment, ...prev.comments],
-                    totalCount: prev.totalCount + 1
-                }));
-                updateBlogActivity(activity => ({
-                    ...activity,
-                    total_comments: (activity.total_comments || 0) + 1,
-                    total_parent_comments: (activity.total_parent_comments || 0) + 1
-                }));
+                setCommentsState(prev => {
+                    // Deduplicate
+                    if (prev.comments.some(c => c._id === newComment._id)) return prev;
+
+                    return {
+                        ...prev,
+                        comments: [newComment, ...prev.comments],
+                        totalCount: prev.totalCount + 1
+                    };
+                });
+                // No updateBlogActivity here, handled by BlogPage globally or initial fetch
             }
         };
 
@@ -152,10 +153,7 @@ const CommentsContainer = React.memo(() => {
                     ),
                     totalCount: prev.totalCount + 1
                 }));
-                updateBlogActivity(activity => ({
-                    ...activity,
-                    total_comments: (activity.total_comments || 0) + 1
-                }));
+                // No updateBlogActivity here
             }
         };
 
@@ -179,11 +177,7 @@ const CommentsContainer = React.memo(() => {
                     };
                 });
 
-                updateBlogActivity(activity => ({
-                    ...activity,
-                    total_comments: Math.max(0, (activity.total_comments || 1) - 1),
-                    total_parent_comments: Math.max(0, (activity.total_parent_comments || 1) - 1)
-                }));
+                // No updateBlogActivity here
             }
         };
 
@@ -196,7 +190,24 @@ const CommentsContainer = React.memo(() => {
             socket.off('newReply', handleNewReply);
             socket.off('commentDeleted', handleCommentDeleted);
         };
-    }, [socket, blogId, setCommentsState, updateBlogActivity]);
+    }, [socket, blogId, setCommentsState]);
+
+    const handleCommentSuccess = useCallback((newComment) => {
+        // Immediate update for better UX
+        setCommentsState(prev => {
+            // Deduplicate just in case
+            if (prev.comments.some(c => c._id === newComment._id)) return prev;
+
+            return {
+                ...prev,
+                comments: [newComment, ...prev.comments],
+                totalCount: prev.totalCount + 1
+            };
+        });
+
+        // We rely on socket updates in BlogPage.jsx to update the global count in the background.
+        // But the user sees their comment immediately here.
+    }, [setCommentsState]);
 
     // Optimized infinite scroll
     const { ref, inView } = useInView({
@@ -266,10 +277,10 @@ const CommentsContainer = React.memo(() => {
 
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
                             <div className="p-4 space-y-6">
-                                <CommentField action="comment" />
+                                <CommentField action="Comment" onPost={handleCommentSuccess} />
 
                                 {error && (
-                                    <div className="flex flex-col items-center justify-center py-8 text-center text-red-500">
+                                    <div className="flex flex-col items-center justify-center py-8 text-center text-orange-500">
                                         <ContainerIcons.Error />
                                         <p className="mt-2 text-sm">{error}</p>
                                         <button

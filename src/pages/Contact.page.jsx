@@ -223,8 +223,8 @@ const ContactPage = () => {
               </div>
             )}
             {submitStatus === 'error' && (
-              <div className="mb-8 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded flex items-center">
-                <svg className="h-5 w-5 text-red-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="mb-8 p-4 bg-red-100 border-l-4 border-orange-500 text-red-700 rounded flex items-center">
+                <svg className="h-5 w-5 text-orange-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <p>There was an error submitting your message. Please try again.</p>
@@ -242,7 +242,7 @@ const ContactPage = () => {
               {/* Common fields */}
               <div>
                 <label htmlFor="name" className="block capitalize text-sm font-medium text-gray-700 mb-2">
-                  Full Name <span className="text-red-500">*</span>
+                  Full Name <span className="text-orange-500">*</span>
                 </label>
                 <input
                   id="name"
@@ -277,7 +277,7 @@ const ContactPage = () => {
                 <>
                   <div>
                     <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-                      Subject <span className="text-red-500">*</span>
+                      Subject <span className="text-orange-500">*</span>
                     </label>
                     <select
                       id="subject"
@@ -298,7 +298,7 @@ const ContactPage = () => {
                   </div>
                   <div>
                     <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                      Message <span className="text-red-500">*</span>
+                      Message <span className="text-orange-500">*</span>
                     </label>
                     <textarea
                       id="message"
@@ -318,7 +318,7 @@ const ContactPage = () => {
                 <>
                   <div>
                     <label htmlFor="qualification" className="block text-sm font-medium text-gray-700 mb-2">
-                      Qualification <span className="text-red-500">*</span>
+                      Qualification <span className="text-orange-500">*</span>
                     </label>
                     <input
                       id="qualification"
@@ -333,7 +333,7 @@ const ContactPage = () => {
                   </div>
                   <div>
                     <label htmlFor="accountType" className="block text-sm font-medium text-gray-700 mb-2">
-                      Account Type <span className="text-red-500">*</span>
+                      Account Type <span className="text-orange-500">*</span>
                     </label>
                     <select
                       id="accountType"
@@ -351,7 +351,7 @@ const ContactPage = () => {
                   </div>
                   <div>
                     <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                      Why do you want to become an editor? <span className="text-red-500">*</span>
+                      Why do you want to become an editor? <span className="text-orange-500">*</span>
                     </label>
                     <textarea
                       id="message"

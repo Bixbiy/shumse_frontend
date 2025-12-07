@@ -82,7 +82,17 @@ const EditProfile = () => {
                     website: social_links.website || "",
                 });
                 setCharacterLeft(150 - (personal_info.bio?.length || 0));
-                toast.success("Your profile was updated elsewhere, refreshing view.");
+
+                // Update Context and Session
+                const updatedUserAuth = {
+                    ...userAuth,
+                    username: personal_info.username,
+                    profile_img: personal_info.profile_img,
+                };
+                storeInSession("user", JSON.stringify(updatedUserAuth));
+                setUserAuth(updatedUserAuth);
+
+                toast.success("Profile updated from another session!");
             }
         });
 
@@ -91,7 +101,7 @@ const EditProfile = () => {
                 socketRef.current.disconnect();
             }
         };
-    }, [access_token, userId]);
+    }, [access_token, userId, userAuth, setUserAuth]);
 
     // ─── Fetch Profile on Mount ─────────────────────────────────────────────────
     useEffect(() => {
@@ -128,14 +138,15 @@ const EditProfile = () => {
             .catch((err) => {
                 console.error("Failed to load profile:", err);
                 toast.error("Failed to load profile. Please try again.");
+                setLoading(false);
             });
     }, [access_token, userAuth.username]);
 
     // ─── Re-validate Whenever Fields Change ─────────────────────────────────────
     useEffect(() => {
-        const fullnameOK = personalInfo.fullname.trim().length >= 3;
+        const fullnameOK = personalInfo.fullname?.trim().length >= 3;
         const usernameOK = /^[a-zA-Z0-9_]{3,20}$/.test(personalInfo.username);
-        const bioOK = personalInfo.bio.length <= 150;
+        const bioOK = personalInfo.bio?.length <= 150;
 
         setValidFields({ fullname: fullnameOK, username: usernameOK, bio: bioOK });
         setFormValid(fullnameOK && usernameOK && bioOK);
@@ -248,10 +259,21 @@ const EditProfile = () => {
         };
 
         try {
-            await api.post(
+            const { data } = await api.post(
                 "/update-profile",
                 payload
             );
+
+            // CRITICAL FIX: Update Session and UserContext immediately
+            const updatedUserAuth = {
+                ...userAuth,
+                username: data.username || payload.username, // prefer backend return
+                // Check if backend returns more updated fields, but these are safer to assume changed
+            };
+
+            storeInSession("user", JSON.stringify(updatedUserAuth));
+            setUserAuth(updatedUserAuth);
+
             toast.success("Profile updated successfully!");
 
             // Emit “forceProfileRefresh” so backend re-broadcasts “profileUpdated”
@@ -281,40 +303,50 @@ const EditProfile = () => {
     // ─── Render ─────────────────────────────────────────────────────────────────
     if (loading) {
         return (
-            <AnimationWrapper>
-                <Toaster position="top-center" />
+            <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
                 <Loader />
-            </AnimationWrapper>
+            </div>
         );
     }
 
     return (
-        <AnimationWrapper  >
+        <AnimationWrapper>
             <Toaster position="top-center" />
 
-            <form onSubmit={handleSave} className="max-w-3xl  mx-auto px-4 py-10 sm:px-6">
-                <div className="bg-white border-4 dark:bg-black/20 shadow-xl rounded-3xl overflow-hidden backdrop-blur-xl ring-1 ring-cyan-100/30">
-                    <div className="bg-gradient-to-br from-blue-900 to-indigo-900 text-white p-6 sm:p-8">
-                        <h1 className="text-3xl font-bold tracking-tight">Edit Profile</h1>
-                        <p className="text-cyan-100 text-sm mt-1">Craft your online identity</p>
+            <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+                {/* Futuristic Header */}
+                <div className="relative mb-10 text-center">
+                    <div className="absolute inset-0 flex items-center justify-center -z-10">
+                        <div className="w-64 h-64 bg-cyan-500/20 rounded-full blur-[100px] opacity-50 dark:opacity-20 animate-pulse"></div>
                     </div>
+                    <h1 className="text-4xl md:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 via-blue-500 to-purple-600 dark:from-cyan-400 dark:via-blue-400 dark:to-purple-400 mb-2">
+                        Customize Your Identity
+                    </h1>
+                    <p className="text-gray-600 dark:text-gray-400 text-lg">
+                        Shape how the world sees you on <span className="font-semibold text-gray-800 dark:text-gray-200">Shumse</span>.
+                    </p>
+                </div>
 
-                    <div className="p-6 space-y-8">
-                        {/* ─── Profile Image ───────────────────────────────────────────── */}
-                        <div className="flex justify-center">
-                            <div className="relative group w-32 h-32 sm:w-40 sm:h-40">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                    {/* LEFT PANEL: Image & Key Info */}
+                    <div className="lg:col-span-4 space-y-6">
+                        <div className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl border border-gray-200 dark:border-zinc-800 rounded-3xl p-6 shadow-xl flex flex-col items-center relative overflow-hidden group">
+                            {/* Decorative background element */}
+                            <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-purple-500"></div>
+
+                            <div className="relative w-40 h-40 mb-6 mt-4">
+                                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 blur-lg opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
                                 <img
                                     ref={imgRef}
                                     src={personalInfo.profile_img || "/default-profile.png"}
                                     alt="Profile"
-                                    className="w-full h-full object-cover rounded-full border-4 border-white shadow-lg group-hover:scale-105 transition"
+                                    className="w-full h-full object-cover rounded-full border-4 border-white dark:border-zinc-800 shadow-2xl relative z-10"
                                 />
-                                <label
-                                    htmlFor="profileImg"
-                                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center rounded-full cursor-pointer transition"
-                                >
-                                    <i className="fi fi-rr-camera text-white text-xl mb-1"></i>
-                                    <span className="text-white text-sm">Change</span>
+                                <div className="absolute bottom-0 right-2 z-20">
+                                    <label htmlFor="profileImg" className="cursor-pointer bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-200 p-3 rounded-full shadow-lg border border-gray-100 dark:border-zinc-700 hover:scale-110 active:scale-95 transition-transform flex items-center justify-center">
+                                        <i className="fi fi-rr-camera text-lg leading-none"></i>
+                                    </label>
                                     <input
                                         type="file"
                                         name="profileImg"
@@ -323,136 +355,164 @@ const EditProfile = () => {
                                         className="hidden"
                                         onChange={handleImageChange}
                                     />
-                                </label>
+                                </div>
+                            </div>
+
+                            <div className="w-full">
+                                <button
+                                    onClick={handleImgUpload}
+                                    disabled={!changedImg}
+                                    className={`w-full py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 ${changedImg
+                                            ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:-translate-y-1"
+                                            : "bg-gray-100 dark:bg-zinc-800/50 text-gray-400 cursor-not-allowed"
+                                        }`}
+                                >
+                                    <i className="fi fi-rr-cloud-upload"></i>
+                                    {changedImg ? "Upload New Photo" : "Upload to Save"}
+                                </button>
+                            </div>
+
+                            <div className="mt-6 text-center">
+                                <p className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-widest font-semibold mb-1">Current User</p>
+                                <h3 className="text-xl font-bold text-gray-800 dark:text-white">@{userAuth.username}</h3>
                             </div>
                         </div>
-                        <button
-                            onClick={handleImgUpload}
-                            disabled={!changedImg}
-                            className={`btn-dark mt-5 center  lg:w-[50%] px-10 ${changedImg ? "" : "opacity-50 cursor-not-allowed"
-                                }`}
-                        >
-                            Upload Image
-                        </button>
+                    </div>
 
-                        {/* ─── Personal Info Inputs ─────────────────────────────────────── */}
-                        <div className="grid sm:grid-cols-2 gap-6">
-                            <InputBox
-                                name="fullname"
-                                type="text"
-                                label="Full Name"
-                                value={personalInfo.fullname}
-                                onChange={(e) => handleInputChange("fullname", e.target.value)}
-                                className="capitalize"
-                                icon="fi-rr-user"
-                                validation={validFields.fullname}
-                                helper={
-                                    validFields.fullname
-                                        ? ""
-                                        : "Full name must be at least 3 letters."
-                                }
-                            />
-                            <InputBox
-                                name="email"
-                                type="email"
-                                label="Email"
-                                value={personalInfo.email}
-                                icon="fi-rr-envelope"
-                                validation={true}
-                                readOnly
-                            />
-                            <InputBox
-                                name="username"
-                                type="text"
-                                label="Username"
-                                value={personalInfo.username}
-                                onChange={(e) => handleInputChange("username", e.target.value)}
-                                icon="fi-rr-at"
-                                validation={validFields.username}
-                                helper={
-                                    validFields.username
-                                        ? ""
-                                        : "3–20 chars; letters, numbers, or underscore only."
-                                }
-                            />
-                        </div>
+                    {/* RIGHT PANEL: Form Inputs */}
+                    <form onSubmit={handleSave} className="lg:col-span-8 space-y-6">
 
-                        {/* ─── Bio ──────────────────────────────────────────────────────────   */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
-                                Bio
-                            </label>
-                            <textarea
-                                name="bio"
-                                value={personalInfo.bio}
-                                onChange={(e) => {
-                                    handleInputChange("bio", e.target.value);
-                                    setCharacterLeft(150 - e.target.value.length);
-                                }}
-                                maxLength={150}
-                                placeholder="Describe yourself in 150 characters"
-                                className={`w-full h-36 p-3 border rounded-xl shadow-sm bg-white/70 focus:ring-2 focus:ring-cyan-500 resize-none ${!validFields.bio ? "border-red-400" : ""
-                                    }`}
-                            />
-                            {!validFields.bio && (
-                                <p className="text-xs text-red-500 mt-1">
-                                    Bio must be 150 characters or fewer.
-                                </p>
-                            )}
-                            <p className="text-xs mt-1 text-right text-cyan-600">
-                                {characterLeft}/150
-                            </p>
-                        </div>
-
-                        {/* ─── Social Links ───────────────────────────────────────────────── */}
-                        <div>
-                            <h3 className="text-md font-semibold text-gray-800 dark:text-white mb-3">
-                                Social Links
+                        {/* Personal Details Card */}
+                        <div className="bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-gray-200 dark:border-zinc-800 rounded-3xl p-8 shadow-sm">
+                            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                                <i className="fi fi-rr-id-card-clip text-cyan-500"></i> Personal Information
                             </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <InputBox
+                                    name="fullname"
+                                    type="text"
+                                    label="Full Name"
+                                    value={personalInfo.fullname}
+                                    onChange={(e) => handleInputChange("fullname", e.target.value)}
+                                    className="capitalize"
+                                    icon="fi-rr-user"
+                                    validation={validFields.fullname}
+                                    helper={!validFields.fullname && "Minimum 3 characters required."}
+                                />
+                                <InputBox
+                                    name="username"
+                                    type="text"
+                                    label="Username"
+                                    value={personalInfo.username}
+                                    onChange={(e) => handleInputChange("username", e.target.value)}
+                                    icon="fi-rr-at"
+                                    validation={validFields.username}
+                                    helper={!validFields.username && "3-20 characters alphanumeric."}
+                                />
+                            </div>
+                            <div className="mb-6">
+                                <InputBox
+                                    name="email"
+                                    type="email"
+                                    label="Email Address"
+                                    value={personalInfo.email}
+                                    icon="fi-rr-envelope"
+                                    validation={true}
+                                    readOnly
+                                    // Make email look clearly read-only
+                                    className="opacity-70"
+                                />
+                                <p className="text-xs text-gray-500 mt-1 ml-1"><i className="fi fi-rr-lock"></i> Email cannot be changed.</p>
+                            </div>
+
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Bio</label>
+                                    <span className={`text-xs font-bold ${characterLeft < 0 ? 'text-red-500' : 'text-cyan-600'}`}>
+                                        {characterLeft} / 150
+                                    </span>
+                                </div>
+                                <textarea
+                                    name="bio"
+                                    value={personalInfo.bio}
+                                    onChange={(e) => {
+                                        handleInputChange("bio", e.target.value);
+                                        setCharacterLeft(150 - e.target.value.length);
+                                    }}
+                                    maxLength={150}
+                                    placeholder="Tell the world who you are..."
+                                    className="w-full h-32 p-4 text-base border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-black/40 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all resize-none dark:text-white"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Social Links Card */}
+                        <div className="bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl border border-gray-200 dark:border-zinc-800 rounded-3xl p-8 shadow-sm">
+                            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                                <i className="fi fi-rr-share text-purple-500"></i> Social Presence
+                            </h3>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                                 {Object.entries({
-                                    twitter: "fi fi-brands-twitter",
-                                    instagram: "fi fi-brands-instagram",
-                                    facebook: "fi fi-brands-facebook",
-                                    github: "fi fi-brands-github",
-                                    linkedin: "fi fi-brands-linkedin",
-                                    website: "fi fi-rr-globe",
-                                }).map(([platform, icon]) => (
-                                    <div key={platform} className="flex items-center space-x-3">
-                                        <i className={`${icon} text-xl text-cyan-500`}></i>
+                                    website: { icon: "fi-rr-globe", label: "Website", placeholder: "https://" },
+                                    twitter: { icon: "fi-brands-twitter", label: "Twitter", placeholder: "https://" },
+                                    instagram: { icon: "fi-brands-instagram", label: "Instagram", placeholder: "https://" },
+                                    facebook: { icon: "fi-brands-facebook", label: "Facebook", placeholder: "https://" },
+                                    github: { icon: "fi-brands-github", label: "GitHub", placeholder: "https://" },
+                                    linkedin: { icon: "fi-brands-linkedin", label: "LinkedIn", placeholder: "https://" },
+                                }).map(([platform, config]) => (
+                                    <div key={platform} className="relative group">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <i className={`fi ${config.icon} text-gray-400 group-focus-within:text-cyan-500 transition-colors text-lg`}></i>
+                                        </div>
                                         <input
                                             name={platform}
                                             type="url"
                                             value={socialLinks[platform] || ""}
-                                            onChange={(e) =>
-                                                handleSocialChange(platform, e.target.value)
-                                            }
-                                            placeholder={`${platform}.com/username`}
-                                            className="flex-1 p-2 rounded-lg bg-white/80 border focus:ring-cyan-500 focus:ring-2"
+                                            onChange={(e) => handleSocialChange(platform, e.target.value)}
+                                            placeholder={config.label}
+                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all dark:text-white placeholder-gray-400 text-sm"
                                         />
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        {/* ─── Save Button ───────────────────────────────────────────────── */}
-                        <div className="pt-6 text-right">
+                        {/* Action Buttons */}
+                        <div className="flex items-center justify-end gap-4 pt-4">
+                            <button
+                                type="button"
+                                onClick={() => window.history.back()}
+                                className="px-6 py-2.5 rounded-xl font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                            >
+                                Cancel
+                            </button>
                             <button
                                 type="submit"
                                 disabled={!formValid || saving}
-                                className={`px-8 py-3 rounded-xl text-white font-bold transition-all duration-300 ${formValid && !saving
-                                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 hover:scale-105 shadow-md"
-                                    : "bg-gray-400 cursor-not-allowed"
+                                className={`px-10 py-3 rounded-xl font-bold text-white shadow-lg transition-all duration-300 flex items-center gap-2 ${formValid && !saving
+                                        ? "bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 hover:scale-105 hover:shadow-blue-500/40"
+                                        : "bg-gray-400 dark:bg-zinc-700 cursor-not-allowed opacity-70"
                                     }`}
                             >
-                                {saving ? "Saving…" : "Save Changes"}
+                                {saving ? (
+                                    <>
+                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    "Save Changes"
+                                )}
                             </button>
                         </div>
-                    </div>
+
+                    </form>
                 </div>
-            </form>
+            </div>
         </AnimationWrapper>
     );
 };
 
 export default EditProfile;
+

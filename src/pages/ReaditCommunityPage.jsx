@@ -29,7 +29,7 @@ const PostCardSkeleton = () => (
 const ErrorDisplay = ({ message = "An error occurred" }) => (
     <div className="flex flex-col items-center justify-center py-12 text-center">
         <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-full mb-4">
-            <i className="fi fi-rr-exclamation text-3xl text-red-500"></i>
+            <i className="fi fi-rr-exclamation text-3xl text-orange-500"></i>
         </div>
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">{message}</h3>
         <Link to="/readit" className="mt-4 text-indigo-500 hover:underline">Return to Home</Link>

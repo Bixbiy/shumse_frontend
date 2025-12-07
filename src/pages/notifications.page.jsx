@@ -382,7 +382,7 @@ const Notifications = () => {
               <button
                 onClick={clearSeenNotifications}
                 disabled={isClearing || !notifications.some(n => n.seen)}
-                className="p-2 text-gray-500 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-grey rounded-full transition-all"
+                className="p-2 text-gray-500 hover:text-orange-500 hover:bg-gray-100 dark:hover:bg-grey rounded-full transition-all"
                 title="Clear read"
               >
                 <FaTrash className="text-lg" />

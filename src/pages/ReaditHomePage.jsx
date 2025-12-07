@@ -21,7 +21,7 @@ const SortButton = memo(({ option, active, onClick, icon }) => (
         whileTap={{ scale: 0.95 }}
         onClick={() => onClick(option)}
         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${active
-            ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/30'
+            ? 'bg-gradient-to-r from-orange-500 to-orange-700 text-white shadow-lg shadow-orange-500/30'
             : 'bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50'
             }`}
     >
@@ -197,11 +197,11 @@ const ReaditHomePage = () => {
                                 className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                             >
                                 <i className="fi fi-rr-menu-burger text-lg dark:text-white"></i>
-                                <span className="font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">Readit</span>
+                                <span className="font-bold bg-gradient-to-r from-orange-500 to-orange-700 bg-clip-text text-transparent">Readit</span>
                             </button>
                             <Link
                                 to="/readit/create-post"
-                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-bold shadow-lg shadow-orange-500/30 hover:shadow-xl transition-shadow"
+                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-700 text-white rounded-xl font-bold shadow-lg shadow-orange-500/30 hover:shadow-xl transition-shadow"
                             >
                                 <i className="fi fi-rr-plus"></i>
                                 <span className="hidden xs:inline">Create</span>
@@ -236,7 +236,7 @@ const ReaditHomePage = () => {
                                 className="absolute left-0 top-0 bottom-0 w-[85%] max-w-sm bg-white dark:bg-gray-900 shadow-2xl overflow-y-auto"
                             >
                                 {/* Sidebar Header */}
-                                <div className="sticky top-0 bg-gradient-to-r from-orange-500 to-red-500 p-6 z-10">
+                                <div className="sticky top-0 bg-gradient-to-r from-orange-500 to-orange-700 p-6 z-10">
                                     <div className="flex items-center justify-between">
                                         <h2 className="text-2xl font-bold text-white">Readit</h2>
                                         <button
@@ -332,7 +332,7 @@ const ReaditHomePage = () => {
                                 to="/readit/create-post"
                                 className="hidden md:flex items-center gap-4 p-4 mb-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-lg hover:border-orange-300 dark:hover:border-orange-600 transition-all group"
                             >
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
                                     <i className="fi fi-rr-edit text-xl"></i>
                                 </div>
                                 <div className="flex-1">
@@ -340,7 +340,7 @@ const ReaditHomePage = () => {
                                         Create a post...
                                     </p>
                                 </div>
-                                <div className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-bold shadow-lg shadow-orange-500/30 group-hover:shadow-xl transition-shadow">
+                                <div className="px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-700 text-white rounded-xl font-bold shadow-lg shadow-orange-500/30 group-hover:shadow-xl transition-shadow">
                                     Post
                                 </div>
                             </Link>
@@ -362,7 +362,7 @@ const ReaditHomePage = () => {
                             <div className="sticky top-[80px] space-y-6">
                                 {/* Popular Communities */}
                                 <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-lg overflow-hidden">
-                                    <div className="bg-gradient-to-r from-orange-500 to-red-500 p-4">
+                                    <div className="bg-gradient-to-r from-orange-500 to-orange-700 p-4">
                                         <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                             <i className="fi fi-rr-flame"></i> Popular Communities
                                         </h3>
@@ -395,7 +395,7 @@ const ReaditHomePage = () => {
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.2 }}
-                                        className="bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group"
+                                        className="bg-gradient-to-br from-purple-500 via-pink-500 to-orange-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group"
                                     >
                                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                                             <i className="fi fi-rr-users-alt text-9xl"></i>

@@ -6,10 +6,11 @@ import { getDay } from '../../common/date';
 import axiosInstance from '../../common/api';
 import { UserContext } from '../../App';
 import toast from 'react-hot-toast';
-import { useContext } from 'react';
+
 import { handleError } from '../../common/errorHandler';
 import { MAX_COMMENT_DEPTH } from './constants';
 import DOMPurify from 'dompurify';
+import VerificationBadge from '../VerificationBadge';
 
 const ReaditCommentCard = ({ comment, postId, depth = 0 }) => {
     const { userAuth } = useContext(UserContext);
@@ -102,8 +103,9 @@ const ReaditCommentCard = ({ comment, postId, depth = 0 }) => {
 
             <div className="flex-1 pb-2 min-w-0">
                 <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                    <Link to={`/user/${author?.personal_info?.username}`} className="font-bold text-black dark:text-white hover:underline truncate">
+                    <Link to={`/user/${author?.personal_info?.username}`} className="font-bold text-black dark:text-white hover:underline truncate flex items-center gap-1">
                         {author?.personal_info?.username || '[deleted]'}
+                        {author?.personal_info?.isVerified && <VerificationBadge size={12} />}
                     </Link>
                     <span>•</span>
                     <span>{getDay(createdAt)}</span>

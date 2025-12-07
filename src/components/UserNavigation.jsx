@@ -4,10 +4,12 @@ import { Link } from "react-router-dom";
 import { UserContext } from "../App";
 import { removeFromSession } from "../common/session";
 import { motion } from "framer-motion";
+import VerificationBadge from "./VerificationBadge";
 
 const UserNavigationPanel = () => {
 
-    const { userAuth: { username, role }, setUserAuth } = useContext(UserContext);
+    const { userAuth, setUserAuth } = useContext(UserContext);
+    const { username, role, personal_info } = userAuth;
 
     const signOutUser = () => {
         removeFromSession("user");
@@ -57,8 +59,13 @@ const UserNavigationPanel = () => {
                 className="text-left p-4 hover:bg-gray-50 dark:hover:bg-grey/50 w-full pl-8 py-4 group focus:outline-none focus:bg-gray-50 dark:focus:bg-grey/50"
                 onClick={signOutUser}
             >
-                <span className="block font-bold text-red-500 text-lg group-hover:text-red-600">Sign Out</span>
-                <span className="block text-dark-grey dark:text-gray-400 text-sm">@{username}</span>
+                <div className="flex items-center gap-1 group-hover:text-red-600">
+                    <span className="block font-bold text-orange-500 text-lg">Sign Out</span>
+                </div>
+                <div className="flex items-center gap-1">
+                    <span className="block text-dark-grey dark:text-gray-400 text-sm">@{username}</span>
+                    {personal_info?.isVerified && <VerificationBadge className="ml-1" size={14} />}
+                </div>
             </button>
 
         </motion.div>

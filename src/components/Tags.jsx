@@ -33,7 +33,7 @@ const Tags = ({ tags = [], setTags }) => {
                         <span className="mr-2 text-gray-700">#{tag}</span>
                         <button
                             type="button"
-                            className="text-red-500 ml-2 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 rounded-full w-5 h-5 flex items-center justify-center transition-colors"
+                            className="text-orange-500 ml-2 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-full w-5 h-5 flex items-center justify-center transition-colors"
                             onClick={() => handleRemoveTag(index)}
                             aria-label={`Remove tag ${tag}`}
                         >

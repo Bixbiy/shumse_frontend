@@ -193,7 +193,7 @@ const PublishForm = () => {
                   <p className="text-xs text-gray-500">
                     Minimum 10 characters required
                   </p>
-                  <p className={`text-sm font-medium ${description.length < 10 ? 'text-red-500' : 'text-gray-600'}`}>
+                  <p className={`text-sm font-medium ${description.length < 10 ? 'text-orange-500' : 'text-gray-600'}`}>
                     {characterLimit - description.length} characters left
                   </p>
                 </div>

@@ -3,8 +3,9 @@ import { formatDate } from '../common/date';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import OptimizedImage from './OptimizedImage';
+import VerificationBadge from './VerificationBadge';
 
-const PostCard = memo(({ content, searchedTag }) => {
+const PostCard = memo(({ content, searchedTag, className }) => {
   if (!content) return null;
 
   const {
@@ -23,16 +24,17 @@ const PostCard = memo(({ content, searchedTag }) => {
   const authorObj = author || authorId || user || {};
   const { personal_info = {} } = authorObj;
   const {
-    fullname = authorObj.fullname || 'Anonymous',
-    username = authorObj.username || 'unknown',
-    profile_img = authorObj.profile_img || 'https://via.placeholder.com/100'
+    fullname = personal_info.fullname || authorObj.fullname || authorObj.name || 'Anonymous',
+    username = personal_info.username || authorObj.username || 'unknown',
+    profile_img = personal_info.profile_img || authorObj.profile_img || 'https://via.placeholder.com/100',
+    isVerified = personal_info.isVerified
   } = personal_info;
 
   return (
     <motion.article
       whileHover={{ y: -4 }}
       transition={{ duration: 0.2 }}
-      className="group relative flex gap-6 items-center bg-white dark:bg-neutral-800 shadow-sm hover:shadow-xl transition-all border border-neutral-200 dark:border-neutral-700 rounded-2xl p-6 mb-6"
+      className={`group relative flex gap-6 items-center bg-white dark:bg-neutral-800 shadow-sm hover:shadow-xl transition-all border border-neutral-200 dark:border-neutral-700 rounded-2xl p-6 ${className || 'mb-6'}`}
     >
       {/* Left Section - Content */}
       <div className="flex-1 min-w-0">
@@ -46,7 +48,10 @@ const PostCard = memo(({ content, searchedTag }) => {
             />
           </motion.div>
           <div className="text-sm font-semibold flex flex-col sm:flex-row sm:gap-2 sm:items-center">
-            <span className="capitalize text-neutral-900 dark:text-white">{fullname}</span>
+            <span className="capitalize text-neutral-900 dark:text-white flex items-center gap-1">
+              {fullname}
+              {isVerified && <VerificationBadge size={14} />}
+            </span>
             {username && <span className="text-neutral-500 dark:text-neutral-400 font-normal">@{username}</span>}
           </div>
           {publishedAt && (

@@ -1,30 +1,23 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { UserContext } from "../App";
 import UserNavigationPanel from "./UserNavigation";
 import api from "../common/api";
 import { LazyMotion, domAnimation, motion, AnimatePresence } from "framer-motion";
 import { useDebounce } from "use-debounce";
-import ThemeToggleButton from "./ThemeToggleButton";
 import OptimizedImage from "./OptimizedImage";
-import site_logo from "../../public/readit.png"
-const preloadAssets = () => {
-  const link = document.createElement('link');
-  link.rel = 'preload';
-  link.as = 'image';
-  link.href = '/logo.png';
-  document.head.appendChild(link);
-};
+import NestedNavbar from "./NestedNavbar";
+import VerificationBadge from "./VerificationBadge";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { userAuth, setUserAuth } = useContext(UserContext);
   const { access_token, profile_img, new_notification_available } = userAuth || {};
 
-
-
   const [searchBoxVisibility, setSearchBoxVisibility] = useState(false);
   const [userNavPanel, setUserNavPanel] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Mobile menu state
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
@@ -36,10 +29,20 @@ const Navbar = () => {
 
   const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
 
-  // Preload assets
-  useEffect(() => {
-    preloadAssets();
-  }, []);
+  // Dynamic Navigation Logic
+  const isReaditPage = location.pathname.startsWith("/readit");
+
+  const navLinks = isReaditPage
+    ? [
+      { path: "/readit/home", label: "Home", icon: "fi-rr-home" },
+      { path: "/readit/create-community", label: "Create Community", icon: "fi-rr-users-medical" },
+      { path: "/readit/create-post", label: "Create Post", icon: "fi-rr-edit" },
+    ]
+    : [
+      { path: "/games", label: "Games", icon: "fi-rr-console-alt" },
+      { path: "/readit", label: "Community", icon: "fi-rr-users-alt" },
+      { path: "/editor", label: "Create", icon: "fi-rr-file-edit" },
+    ];
 
   // Scroll handler
   useEffect(() => {
@@ -48,14 +51,14 @@ const Navbar = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
           const scrolled = window.scrollY > 10;
-          setIsScrolled(prev => prev !== scrolled ? scrolled : prev);
+          setIsScrolled(prev => (prev !== scrolled ? scrolled : prev));
           ticking = false;
         });
         ticking = true;
       }
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Search effect
@@ -68,14 +71,16 @@ const Navbar = () => {
     const fetchSuggestions = async () => {
       setIsSearchLoading(true);
       try {
-        const { data } = await api.get('/s-suggestion', {
-          params: { q: debouncedSearchQuery }
+        const { data } = await api.get("/s-suggestion", {
+          params: { q: debouncedSearchQuery },
         });
 
-        const enhancedResults = data.suggestions.map((item, idx) => ({
-          ...item,
-          id: item._id || `${item.type}-${item.title}-${idx}`,
-        })).slice(0, 5);
+        const enhancedResults = data.suggestions
+          .map((item, idx) => ({
+            ...item,
+            id: item._id || `${item.type}-${item.title}-${idx}`,
+          }))
+          .slice(0, 5);
 
         setSearchResults(enhancedResults);
       } catch (error) {
@@ -107,15 +112,18 @@ const Navbar = () => {
   };
 
   const handleSuggestionClick = (suggestion) => {
-    let path = '';
+    let path = "";
     let state = {};
     switch (suggestion.type) {
-      case 'user': path = `/user/${suggestion.title}`; break;
-      case 'tag':
+      case "user":
+        path = `/user/${suggestion.title}`;
+        break;
+      case "tag":
         path = `/search/tag/${encodeURIComponent(suggestion.tag)}`;
         state = { searchedTag: suggestion.tag };
         break;
-      default: path = `/search/${encodeURIComponent(suggestion.title || suggestion.query)}`;
+      default:
+        path = `/search/${encodeURIComponent(suggestion.title || suggestion.query)}`;
     }
 
     navigate(path, { state });
@@ -124,13 +132,13 @@ const Navbar = () => {
     setSearchBoxVisibility(false);
   };
 
-  // Notification fetch logic (FIXED)
+  // Notification fetch logic
   useEffect(() => {
     if (!access_token) return;
 
     const checkNotifications = async () => {
       try {
-        const { data } = await api.get('/new-notification');
+        const { data } = await api.get("/new-notification");
         setUserAuth(prev => ({ ...prev, ...data }));
       } catch (err) {
         console.error(err);
@@ -138,132 +146,138 @@ const Navbar = () => {
     };
 
     checkNotifications();
-    // Optional: Add interval logic here if needed
   }, [access_token, setUserAuth]);
 
   return (
-    <>
-      <LazyMotion features={domAnimation}>
-        <div className={`z-50 sticky top-0 w-full transition-all duration-300 ${isScrolled ? 'bg-white/80 dark:bg-dark-grey/80 backdrop-blur-md border-b border-gray-100 dark:border-grey' : 'bg-white dark:bg-dark-grey'}`}>
-          <motion.nav
-            initial={{ y: -10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="navbar w-full flex items-center gap-12 px-[5vw] py-5 h-[80px]"
-          >
-            {/* Logo */}
+    <LazyMotion features={domAnimation}>
+      <div
+        className={`z-50 sticky top-0 w-full transition-all duration-300 ${isScrolled
+          ? "bg-white/80 dark:bg-dark-grey/80 backdrop-blur-md border-b border-gray-100 dark:border-grey"
+          : "bg-white dark:bg-dark-grey"
+          }`}
+      >
+        <motion.nav
+          initial={{ y: -10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="navbar w-full flex items-center justify-between px-[5vw] py-4 h-[80px]"
+        >
+          {/* Logo & Branding */}
+          <div className="flex items-center gap-4">
             <Link to="/" className="w-12 block flex-none">
-              <h1 className=" md:flex gap-2 items-center py-2  bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white rounded-full text-sm font-large shadow-sm hover:shadow-md transition-all transform hover:-translate-y-0.5">Shums</h1>
-              {/* <img src={site_logo} alt="Readit" className="w-cover" /> */}
+              <h1 className="flex items-center justify-center py-2 px-3 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white rounded-full text-sm font-bold shadow-sm hover:shadow-md transition-all transform hover:-translate-y-0.5">
+                Shums
+              </h1>
             </Link>
+          </div>
 
-            {/* Desktop Search Bar Container */}
-            <div className="absolute bg-white dark:bg-dark-grey w-full left-0 top-full mt-0.5 border-b border-grey py-4 px-[5vw] md:border-0 md:block md:relative md:inset-0 md:p-0 md:w-auto md:show pointer-events-auto transition-all duration-300">
-              <div className="relative">
-                <input
-                    type="search"
-                    placeholder="Search..."
-                    ref={desktopSearchRef}
-                    className="w-full md:w-auto bg-gray-100 dark:bg-grey p-4 pl-6 pr-[12%] md:pr-6 rounded-full placeholder:text-dark-grey/50 md:pl-12 outline-none focus:bg-transparent transition-all border border-transparent focus:border-gray-200 dark:focus:border-grey"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    onKeyDown={handleSearchEnter}
-                  />
+          {/* Desktop Nested Navbar - Centered or merged with search? 
+                        Let's keep it next to logo or separate. 
+                        Design choice: Keep links visible on desktop, hidden on mobile. */}
+          <div className="hidden md:flex items-center gap-6 ml-6">
+            <NestedNavbar links={navLinks} />
+          </div>
 
-                  {/* Search Button (Restored from error location) */}
-                  <button
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-primary transition-colors"
-                    aria-label="Submit search"
-                    onClick={() => handleSearchEnter({ key: 'Enter', preventDefault: () => { } })}
-                  >
-                    
-                  <i className="fi fi-rr-search text-xl"></i>
-                </button>
-              </div>
 
-              {/* Search Results Dropdown */}
-              <AnimatePresence>
-                {searchResults.length > 0 && (
-                  <motion.ul
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute left-0 right-0 mt-2 bg-white dark:bg-dark-grey shadow-xl rounded-xl overflow-hidden z-30 border border-gray-100 dark:border-grey md:w-[150%]"
-                    role="listbox"
-                  >
-                    {searchResults.map((suggestion, index) => (
-                      <li
-                        key={suggestion.id}
-                        className={`px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-grey focus:bg-gray-50 dark:focus:bg-grey outline-none`}
-                        onClick={() => handleSuggestionClick(suggestion)}
-                        role="option"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSuggestionClick(suggestion);
-                        }}
-                      >
-                        <p className="font-medium text-sm text-gray-900 dark:text-white">{suggestion.title}</p>
-                      </li>
-                    ))}
-                  </motion.ul>
-                )}
-              </AnimatePresence>
-            </div>
+          {/* Search Bar Container - Desktop */}
+          <div className="hidden md:block relative ml-auto mr-4">
+            <input
+              type="search"
+              placeholder="Search..."
+              ref={desktopSearchRef}
+              className="w-full bg-gray-100 dark:bg-grey p-3 pl-5 pr-12 rounded-full placeholder:text-dark-grey/50 outline-none focus:bg-transparent transition-all border border-transparent focus:border-gray-200 dark:focus:border-grey text-sm"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onKeyDown={handleSearchEnter}
+            />
+            <button
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-primary transition-colors"
+              onClick={() => handleSearchEnter({ key: 'Enter', preventDefault: () => { } })}
+            >
+              <i className="fi fi-rr-search text-lg"></i>
+            </button>
 
-            {/* Right Nav */}
-            <div className="flex items-center gap-3 md:gap-4 ml-auto">
-              <button
-                className="md:hidden w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-grey hover:bg-gray-200 dark:hover:bg-dark-grey transition-colors"
-                onClick={() => setSearchBoxVisibility(!searchBoxVisibility)}
-                aria-label="Toggle search"
-                aria-expanded={searchBoxVisibility}
-              >
-                <i className="fi fi-rs-search text-xl"></i>
-              </button>
+            {/* Search Results Dropdown */}
+            <AnimatePresence>
+              {searchResults.length > 0 && (
+                <motion.ul
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute left-0 right-0 mt-2 bg-white dark:bg-dark-grey shadow-xl rounded-xl overflow-hidden z-30 border border-gray-100 dark:border-grey w-[120%]"
+                >
+                  {searchResults.map((suggestion) => (
+                    <li
+                      key={suggestion.id}
+                      className="px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-grey"
+                      onClick={() => handleSuggestionClick(suggestion)}
+                    >
+                      <div className="flex flex-col">
+                        <p className="font-medium text-sm text-gray-900 dark:text-white">
+                          {suggestion.title}
+                        </p>
+                        {(suggestion.fullname || suggestion.personal_info?.fullname || suggestion.name) && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            {suggestion.fullname || suggestion.personal_info?.fullname || suggestion.name}
+                            {suggestion.personal_info?.isVerified && <VerificationBadge size={12} />}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </motion.ul>
+              )}
+            </AnimatePresence>
+          </div>
 
-              {/* <ThemeToggleButton /> */}
-<NavLink to="/games" className={({ isActive }) => `flex items-center justify-center w-10 h-10 md:w-auto md:px-3 md:py-2 rounded-full hover:bg-gray-100 dark:hover:bg-grey text-dark-grey dark:text-light-grey transition-colors ${isActive ? 'text-primary dark:text-primary bg-primary/10' : ''}`}
-                aria-label="Games by Shums">
-                    <i className="fi fi-rr-console-alt text-xl"></i>
-                <span className="text-sm font-medium hidden md:inline ml-2">Games</span>
-                </NavLink>
-              <NavLink
-                to="/readit"
-                className={({ isActive }) => `flex items-center justify-center w-10 h-10 md:w-auto md:px-3 md:py-2 rounded-full hover:bg-gray-100 dark:hover:bg-grey text-dark-grey dark:text-light-grey transition-colors ${isActive ? 'text-primary dark:text-primary bg-primary/10' : ''}`}
-                aria-label="Community"
-              >
-                <i className="fi fi-rr-users-alt text-xl"></i>
-                <span className="text-sm font-medium hidden md:inline ml-2">Community</span>
-              </NavLink>
 
-              <Link
-                to="/editor"
-                className="hidden md:flex gap-2 items-center px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white rounded-full text-sm font-medium shadow-sm hover:shadow-md transition-all transform hover:-translate-y-0.5"
-                aria-label="Create new post"
-              >
-                <i className="fi fi-rr-file-edit"></i>
-                <span className="hidden lg:inline">Create</span>
-              </Link>
+          {/* Right Side Actions */}
+          <div className="flex items-center gap-3">
+            {/* Mobile Search Toggle */}
+            <button
+              className="md:hidden w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-grey hover:bg-gray-200 dark:hover:bg-dark-grey transition-colors"
+              onClick={() => setSearchBoxVisibility(!searchBoxVisibility)}
+              aria-label="Toggle search"
+            >
+              <i className="fi fi-rs-search text-xl"></i>
+            </button>
 
+            {/* Hamburger Menu Toggle - Mobile */}
+            <button
+              className="md:hidden w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-grey hover:bg-gray-200 dark:hover:bg-dark-grey transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              <i className={`fi ${mobileMenuOpen ? 'fi-rr-cross' : 'fi-rr-menu-burger'} text-xl transition-all`}></i>
+            </button>
+
+            {/* Desktop User Nav */}
+            <div className="hidden md:flex items-center gap-4">
               {access_token ? (
                 <>
                   <NavLink
                     to="/dashboard/notifications"
-                    className={({ isActive }) => `relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-grey transition-colors ${isActive ? 'text-primary bg-primary/10' : ''}`}
-                    aria-label="Notifications"
+                    className={({ isActive }) =>
+                      `relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-grey transition-colors ${isActive ? "text-primary bg-primary/10" : "text-dark-grey dark:text-light-grey"
+                      }`
+                    }
                   >
                     <i className="fi fi-rr-bell text-xl"></i>
-                    {new_notification_available && <span className="bg-error rounded-full w-3 h-3 absolute top-1 right-1 border-2 border-white dark:border-dark-grey"></span>}
+                    {new_notification_available && (
+                      <span className="bg-red-500 rounded-full w-3 h-3 absolute top-1 right-1 border-2 border-white dark:border-dark-grey"></span>
+                    )}
                   </NavLink>
 
                   <div className="relative">
                     <button
                       onClick={() => setUserNavPanel(prev => !prev)}
-                      className="w-10 h-10 rounded-full overflow-hidden border-2 border-transparent hover:border-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
-                      aria-label="User menu"
-                      aria-expanded={userNavPanel}
+                      className="w-10 h-10 rounded-full overflow-hidden border-2 border-transparent hover:border-primary transition-colors"
                     >
-                      <OptimizedImage src={profile_img} alt="Profile" className="w-full h-full object-cover" />
+                      <OptimizedImage
+                        src={profile_img}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
                     </button>
                     <AnimatePresence>
                       {userNavPanel && (
@@ -271,7 +285,7 @@ const Navbar = () => {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 10 }}
-                          className="absolute right-0 mt-2"
+                          className="absolute right-0 mt-2 z-50"
                         >
                           <UserNavigationPanel />
                         </motion.div>
@@ -280,42 +294,87 @@ const Navbar = () => {
                   </div>
                 </>
               ) : (
-                <>
-                  <Link to="/signin" className="btn-dark text-sm hidden md:block hover:bg-black/80 transition-colors">Sign In</Link>
-</>
+                <Link to="/signin" className="btn-dark text-sm px-6 py-2 rounded-full">
+                  Sign In
+                </Link>
               )}
             </div>
-          </motion.nav>
+          </div>
+        </motion.nav>
 
-          {/* Mobile Search */}
-          <AnimatePresence>
-            {searchBoxVisibility && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="bg-white dark:bg-dark-grey-2 px-4 py-3 shadow-lg md:hidden border-b border-gray-100 dark:border-grey"
-              >
-                <div className="relative">
-                  <input
-                    type="search"
-                    placeholder="Search..."
-                    ref={mobileSearchRef}
-                    className="w-full bg-gray-100 dark:bg-grey dark:border  border border-gray-200 dark:border-gray-200 dark:rounded-full rounded-full py-3 px-6 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    onKeyDown={handleSearchEnter}
-                    aria-label="Mobile search"
-                  />
-                  <i className="fi fi-rr-search absolute right-4 top-1/2 -translate-y-1/2 text-xl text-gray-500"></i>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </LazyMotion>
+        {/* Mobile Search Bar Expand */}
+        <AnimatePresence>
+          {searchBoxVisibility && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="bg-white dark:bg-dark-grey-2 px-4 py-3 shadow-lg md:hidden border-b border-gray-100 dark:border-grey"
+            >
+              <div className="relative">
+                <input
+                  type="search"
+                  placeholder="Search..."
+                  ref={mobileSearchRef}
+                  className="w-full bg-gray-100 dark:bg-grey border border-gray-200 dark:border-gray-700 rounded-full py-3 px-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onKeyDown={handleSearchEnter}
+                />
+                <i className="fi fi-rr-search absolute left-4 top-1/2 -translate-y-1/2 text-xl text-gray-500"></i>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-    </>
+        {/* Mobile Menu Overlay */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="absolute top-[80px] left-0 w-full bg-white dark:bg-dark-grey shadow-xl md:hidden z-40 border-b border-gray-100 dark:border-grey p-6 flex flex-col gap-4"
+            >
+              <div className="flex flex-col gap-2">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Menu</h3>
+                <NestedNavbar links={navLinks} />
+              </div>
+
+              <div className="border-t border-gray-100 dark:border-grey pt-4 mt-2">
+                {access_token ? (
+                  <div className="flex flex-col gap-4">
+                    <Link to={`/user/${userAuth?.username}`} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-grey rounded-lg">
+                      <div className="w-10 h-10 rounded-full overflow-hidden">
+                        <OptimizedImage src={profile_img} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-dark-grey dark:text-white flex items-center gap-1">
+                          Profile
+                        </span>
+                        <span className="text-sm text-gray-500 flex items-center gap-1">
+                          @{userAuth?.username}
+                          {userAuth?.personal_info?.isVerified && <VerificationBadge size={12} />}
+                        </span>
+                      </div>
+                    </Link>
+                    <Link to="/dashboard/notifications" className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-grey rounded-lg text-dark-grey dark:text-white">
+                      <i className="fi fi-rr-bell text-xl"></i>
+                      <span>Notifications</span>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <Link to="/signin" className="btn-dark w-full text-center py-3 rounded-full">Sign In</Link>
+                    <Link to="/signup" className="btn-light w-full text-center py-3 rounded-full bg-gray-100 dark:bg-grey">Sign Up</Link>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </LazyMotion>
   );
 };
 

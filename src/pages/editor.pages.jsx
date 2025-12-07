@@ -102,7 +102,7 @@ const Editor = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md mx-4">
           <div className="mb-4">
-            <i className="fi fi-rr-exclamation text-5xl text-red-500"></i>
+            <i className="fi fi-rr-exclamation text-5xl text-orange-500"></i>
           </div>
           <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
           <p className="text-gray-700 mb-6">{error}</p>
@@ -128,7 +128,7 @@ const Editor = () => {
             What do you want to create?
           </h1>
           <p className="text-gray-600 mb-8">
-            Choose the type of content you'd like to publish
+            Choose the type of content you&rsquo;d like to publish
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button

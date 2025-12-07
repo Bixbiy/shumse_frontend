@@ -1,6 +1,7 @@
 import React, { memo } from "react";
 import { Link } from "react-router-dom";
 import { formatDate } from "../common/date";
+import VerificationBadge from "./VerificationBadge";
 
 const MinimalPostCard = memo(({ blog, index }) => {
   let {
@@ -9,7 +10,7 @@ const MinimalPostCard = memo(({ blog, index }) => {
     publishedAt,
     banner,
     authorId: {
-      personal_info: { fullname, username, profile_img },
+      personal_info: { fullname, username, profile_img, isVerified },
     },
     activity: { total_likes },
   } = blog;
@@ -29,8 +30,10 @@ const MinimalPostCard = memo(({ blog, index }) => {
         {/* Author Info */}
         <div className="flex items-center gap-3 mb-3 text-sm text-dark-grey">
           <img src={profile_img} alt="Author" className="w-7 h-7 rounded-full" />
-          <span className="font-medium">
-            {fullname} <span className="opacity-70">@{username}</span>
+          <span className="font-medium flex items-center gap-1">
+            {fullname}
+            {isVerified && <VerificationBadge size={12} />}
+            <span className="opacity-70">@{username}</span>
           </span>
           <p className="min-w-fit opacity-60 text-xs">{formatDate(publishedAt)}</p>
         </div>

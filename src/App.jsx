@@ -3,7 +3,7 @@
  * Path: src/App.jsx
  */
 import React, { useState, useEffect, createContext, lazy, Suspense, useMemo } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Outlet } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { ThemeProvider } from "./context/ThemeContext";
 import { SocketProvider } from "./context/SocketContext";
@@ -113,11 +113,13 @@ const App = () => {
                                         {/* Routes WITH AppLayout (Navbar/BottomNav) */}
 
                                         <Route index element={<><Navbar /><HomePage /><Footer /></>} />
-                                        <Route path="contact" element={<ContactPage />} />
-                                        <Route path="search/:search_query" element={<SearchPage />} />
-                                        <Route path="search/tag/:search_query" element={<SearchPage />} />
-                                        <Route path="user/:id" element={<ProfilePage />} />
-                                        <Route path="post/:blog_id" element={<BlogPage />} />
+                                        <Route element={<><Navbar /><Outlet /></>}>
+                                            <Route path="contact" element={<ContactPage />} />
+                                            <Route path="search/:search_query" element={<SearchPage />} />
+                                            <Route path="search/tag/:search_query" element={<SearchPage />} />
+                                            <Route path="user/:id" element={<ProfilePage />} />
+                                            <Route path="post/:blog_id" element={<BlogPage />} />
+                                        </Route>
 
                                         {/* Story Routes */}
                                         <Route path="stories" element={<StoriesList />} />
@@ -125,7 +127,7 @@ const App = () => {
                                         <Route path="story/:story_id" element={<StoryViewerModal />} />
 
                                         {/* --- OPTIMIZED READIT ROUTES --- */}
-                                        <Route path="readit">
+                                        <Route path="readit" element={<><Navbar /><Outlet /></>}>
                                             <Route path="home" element={<ReaditHomePage />} />
                                             <Route path="c/:communityName" element={<ReaditCommunityPage />} />
                                             <Route path="create-community" element={<ReaditCreateCommunityPage />} />

@@ -6,6 +6,7 @@ import { formatDate } from '../common/date';
 import toast from 'react-hot-toast';
 import PropTypes from 'prop-types';
 import { useSocket } from '../context/SocketContext';
+import VerificationBadge from './VerificationBadge';
 
 // Optimized icons - using simple SVG icons
 const Icons = {
@@ -89,7 +90,7 @@ const CommentCard = React.memo(({ commentData, depth = 0 }) => {
 
     // Context and props
     const { _id, blog_id, blog_author, comment, commentedAt, commented_by, isDeleted, repliesCount, edited } = cardData;
-    const { personal_info: { fullname, profile_img, username } = {} } = commented_by || {};
+    const { personal_info: { fullname, profile_img, username, isVerified } = {} } = commented_by || {};
 
     const { userAuth } = useContext(UserContext);
     const { access_token, _id: currentUserId } = userAuth || {};
@@ -320,6 +321,7 @@ const CommentCard = React.memo(({ commentData, depth = 0 }) => {
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <span className="font-medium text-gray-900 dark:text-white text-sm truncate">
                                             {fullname || 'Anonymous'}
+                                            {isVerified && <VerificationBadge size={12} />}
                                         </span>
                                         {username && (
                                             <span className="text-gray-500 dark:text-gray-400 text-xs truncate">
@@ -361,7 +363,7 @@ const CommentCard = React.memo(({ commentData, depth = 0 }) => {
                                                 )}
                                                 <button
                                                     onClick={handleDelete}
-                                                    className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                    className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-orange-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                                                 >
                                                     <Icons.Delete className="w-4 h-4" />
                                                     Delete
@@ -383,8 +385,8 @@ const CommentCard = React.memo(({ commentData, depth = 0 }) => {
                                     onClick={handleLike}
                                     disabled={!access_token}
                                     className={`flex items-center gap-1 text-sm transition-colors ${isLiked
-                                        ? 'text-red-500'
-                                        : 'text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'
+                                        ? 'text-orange-500'
+                                        : 'text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-red-400'
                                         } ${!access_token ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     <Icons.Heart filled={isLiked} />

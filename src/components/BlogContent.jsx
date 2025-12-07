@@ -231,7 +231,7 @@ const BlogContent = ({ block }) => {
     case "youtubeEmbed":
       return <YouTubeEmbed data={data} />;
     default:
-      return <div className="my-8 text-red-500">Unsupported block type: {type}</div>;
+      return <div className="my-8 text-orange-500">Unsupported block type: {type}</div>;
   }
 };
 

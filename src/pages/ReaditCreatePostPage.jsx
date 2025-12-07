@@ -155,7 +155,7 @@ const ReaditCreatePostPage = () => {
                 className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
             >
                 {/* Header */}
-                <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 text-white">
+                <div className="bg-gradient-to-r from-orange-500 to-orange-700 p-6 text-white">
                     <div className="flex items-center gap-4">
                         <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
                             <i className="fi fi-rr-edit text-2xl"></i>
@@ -318,7 +318,7 @@ const ReaditCreatePostPage = () => {
                         <button
                             type="submit"
                             disabled={isLoading || uploading || !formData.title.trim()}
-                            className="flex-[2] bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-orange-500/25"
+                            className="flex-[2] bg-gradient-to-r from-orange-500 to-orange-700 hover:from-orange-600 hover:to-red-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-orange-500/25"
                         >
                             {isLoading ? (
                                 <Loader />

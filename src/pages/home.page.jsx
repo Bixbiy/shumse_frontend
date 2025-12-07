@@ -108,7 +108,7 @@ const HomePage = () => {
     useEffect(() => {
         fetchBlogs(null, 1);
         fetchTrendingPosts();
-    }, [fetchBlogs, fetchTrendingPosts]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         const handleScroll = () => {
@@ -144,10 +144,45 @@ const HomePage = () => {
             setTrendingBlogs(prev => filterOutBlog(prev, blog_id));
         });
 
+        // NEW: Listen for profile updates to refresh author info in posts
+        socket.on('profileUpdated', (updatedUser) => {
+            const updateAuthorInList = (list) => {
+                if (!list) return null;
+                const results = list.results ? list.results : list;
+
+                const updatedResults = results.map(blog => {
+                    // Check if blog author matches the updated user
+                    // blog.authorId is usually the populated object
+                    const authorId = blog.authorId?._id || blog.authorId;
+                    if (authorId === updatedUser._id) {
+                        return {
+                            ...blog,
+                            authorId: {
+                                ...blog.authorId,
+                                personal_info: {
+                                    ...blog.authorId.personal_info,
+                                    fullname: updatedUser.personal_info.fullname,
+                                    username: updatedUser.personal_info.username,
+                                    profile_img: updatedUser.personal_info.profile_img
+                                }
+                            }
+                        };
+                    }
+                    return blog;
+                });
+
+                return list.results ? { ...list, results: updatedResults } : updatedResults;
+            };
+
+            setBlogs(prev => updateAuthorInList(prev));
+            setTrendingBlogs(prev => updateAuthorInList(prev));
+        });
+
         return () => {
             socket.off('listLikeUpdate');
             socket.off('newPost');
             socket.off('postDeleted');
+            socket.off('profileUpdated');
         };
     }, [socket, pageTitle]);
 

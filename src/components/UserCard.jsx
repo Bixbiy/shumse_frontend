@@ -5,9 +5,9 @@ import { Link } from 'react-router-dom';
 
 const UserCard = ({ user, fallbackImage }) => {
   // Safely retrieve properties using optional chaining
-  const profileImage = user?.personal_info?.profile_img || fallbackImage;
-  const username = user?.personal_info?.username || 'Unknown';
-  const fullname = user?.personal_info?.fullname || 'Unknown User';
+  const profileImage = user?.personal_info?.profile_img || user?.profile_img || fallbackImage;
+  const username = user?.personal_info?.username || user?.username || 'Unknown';
+  const fullname = user?.personal_info?.fullname || user?.fullname || user?.name || 'Unknown User';
 
   return (
     <Link to={`/user/${username || ''}`}>

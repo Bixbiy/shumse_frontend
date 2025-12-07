@@ -66,7 +66,7 @@ const ReaditMainCommentField = ({ postId, onCommentPosted }) => {
                     whileTap={{ scale: 0.98 }}
                     onClick={handleSubmit}
                     disabled={isSubmitting || !comment.trim()}
-                    className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-orange-500 text-white rounded-xl font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                     {isSubmitting ? (
                         <div className="flex items-center gap-2">
@@ -232,7 +232,7 @@ const ReaditCommentSection = ({ post, onCommentPosted }) => {
                     <p className="text-gray-700 dark:text-gray-300 font-medium mb-3">Join the conversation</p>
                     <Link
                         to="/signin"
-                        className="inline-block px-6 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-shadow"
+                        className="inline-block px-6 py-2.5 bg-gradient-to-r from-orange-500 to-orange-500 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-shadow"
                     >
                         Sign In
                     </Link>

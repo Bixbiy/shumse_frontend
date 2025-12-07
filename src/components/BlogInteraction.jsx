@@ -5,7 +5,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import api from '../common/api';
 
-const BlogInteraction = () => {
+const BlogInteraction = ({ small = false }) => {
     // Get user authentication data from the user context
     const { userAuth: { access_token, username } } = useContext(UserContext);
     // Get blog data and the updater function from the post context
@@ -124,14 +124,12 @@ const BlogInteraction = () => {
 
     return (
         <>
-            {/* Toast container for notifications */}
-            <Toaster />
-
-            {/* Divider */}
-            <hr className="border-dark-grey/50 my-3" />
+            {/* Toast container for notifications (only verify if needed, might duplicate) */}
+            {/* Divider - hide if small */}
+            {!small && <hr className="border-dark-grey/50 my-3" />}
 
             {/* Interaction buttons section */}
-            <div className="flex justify-between items-center">
+            <div className={`flex justify-between items-center ${small ? 'w-full' : ''}`}>
                 <div className="flex gap-3 items-center">
                     {/* Like Button */}
                     <button
@@ -155,7 +153,7 @@ const BlogInteraction = () => {
                     {/* Comment Button */}
                     <button
                         onClick={() => { setCommentsWrapper(preVal => !preVal) }}
-                        className="w-10 h-10 rounded-full flex items-center justify-center bg-grey/20 hover:bg-grey/30 text-dark-grey transition-colors"
+                        className="w-10 h-10 rounded-full flex items-center justify-center bg-grey/20 hover:bg-grey/30 text-dark-grey transition-colors ml-2"
                         aria-label="View comments"
                     >
                         <i className="fi fi-rr-comment-dots text-xl" />
@@ -166,8 +164,8 @@ const BlogInteraction = () => {
 
                 {/* Section for edit and share options */}
                 <div className="flex gap-4 items-center">
-                    {/* Show the Edit button only if the current user is the author */}
-                    {username === author_username && (
+                    {/* Show the Edit button only if the current user is the author and NOT small mode (or make icon only) */}
+                    {username === author_username && !small && (
                         <Link
                             to={`/editor/${blog_id}`}
                             className="bg-black text-white px-4 py-2 rounded-full hover:bg-grey/90 transition-colors flex items-center gap-2"
@@ -177,6 +175,8 @@ const BlogInteraction = () => {
                             <i className="fi fi-rr-pencil text-sm" />
                         </Link>
                     )}
+
+                    {/* If small mode and user is author, maybe show just pencil icon? Decided to hide for cleanliness on mobile fab, or user can scroll up */}
 
                     {/* Share options dropdown */}
                     <div className="relative group">
@@ -188,8 +188,8 @@ const BlogInteraction = () => {
                             <i className="fi fi-sr-share text-lg" />
                         </button>
 
-                        {showShareOptions && (
-                            <div className="absolute right-0 bottom-full mb-2 w-44 bg-white dark:bg-gray-800 border border-grey/20 dark:border-gray-700 shadow-lg rounded-xl z-10 animate-fade-in">
+                        {(showShareOptions) && (
+                            <div className={`absolute ${small ? 'bottom-full right-0 mb-4' : 'right-0 bottom-full mb-2'} w-44 bg-white dark:bg-gray-800 border border-grey/20 dark:border-gray-700 shadow-lg rounded-xl z-10 animate-fade-in`}>
                                 <ul className="p-2 flex justify-around">
                                     {[
                                         {

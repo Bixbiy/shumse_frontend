@@ -79,6 +79,8 @@ const CommentField = React.memo(({ action, replyingTo = null, onPost, initialTex
             return;
         }
 
+        console.log("handleComment executing with action:", action);
+
         setIsPosting(true);
         const toastId = toast.loading(`${action === 'Save' ? 'Saving' : 'Posting'}...`);
 
@@ -88,18 +90,47 @@ const CommentField = React.memo(({ action, replyingTo = null, onPost, initialTex
                 setComment('');
                 if (action === "Save" && onCancel) onCancel();
             } else if (action === "Comment") {
+                console.log("Preparing to send comment API request...");
+
                 if (!blog?._id) {
                     throw new Error("Blog data is not available.");
                 }
 
-                await api.post('/add-comment', {
+                console.log("Sending POST to /add-comment", { blog_id: blog._id, comment: sanitizedComment });
+                const { data } = await api.post('/add-comment', {
                     blog_id: blog._id,
                     blog_author: blog.authorId._id,
                     comment: sanitizedComment,
                 });
+                console.log("API Request Successful, response data:", data);
 
                 setComment('');
                 setCharCount(0);
+
+                // Handle potential response structure differences (unwrapping if necessary)
+                // If data.comment is an object (not the string text), it's likely a wrapper { comment: ... }
+                let payload = data.comment && typeof data.comment === 'object' ? data.comment : data;
+
+                // Robustly enrich payload for immediate UI rendering
+                // We manually construct the user structure that CommentCard expects
+                payload = {
+                    ...payload,
+                    commented_by: payload.commented_by?.personal_info ? payload.commented_by : {
+                        personal_info: {
+                            username: userAuth.username,
+                            profile_img: userAuth.profile_img,
+                            fullname: userAuth.fullname
+                        },
+                        _id: userAuth._id || payload.commented_by // Fallback to ID if present in payload
+                    },
+                    commentedAt: payload.commentedAt || new Date().toISOString(),
+                    _id: payload._id || `temp-${Date.now()}` // Fallback ID just in case
+                };
+
+                console.log("Calling onPost with enriched payload:", payload);
+                if (onPost) onPost(payload);
+            } else {
+                console.warn("handleComment: Unknown action type", action);
             }
 
             toast.success(`${action}ed successfully!`, { id: toastId });
@@ -142,8 +173,8 @@ const CommentField = React.memo(({ action, replyingTo = null, onPost, initialTex
 
                 <div className="flex-1 min-w-0">
                     <div className={`relative rounded-lg transition-colors duration-200 ${isFocused
-                            ? 'bg-white dark:bg-gray-800 ring-2 ring-blue-500/20 shadow-sm'
-                            : 'bg-gray-50 dark:bg-gray-800/50'
+                        ? 'bg-white dark:bg-gray-800 ring-2 ring-blue-500/20 shadow-sm'
+                        : 'bg-gray-50 dark:bg-gray-800/50'
                         }`}>
                         <textarea
                             ref={textareaRef}
@@ -165,8 +196,8 @@ const CommentField = React.memo(({ action, replyingTo = null, onPost, initialTex
                         {charCount > MAX_COMMENT_LENGTH * 0.7 && (
                             <div className="absolute right-3 top-3">
                                 <div className={`text-xs font-medium px-2 py-1 rounded ${charCount > MAX_COMMENT_LENGTH * 0.9
-                                        ? 'text-red-500 bg-red-500/10'
-                                        : 'text-gray-500 bg-gray-500/10'
+                                    ? 'text-primary-500 bg-primary-500/10'
+                                    : 'text-gray-500 bg-gray-500/10'
                                     }`}>
                                     {charCount}/{MAX_COMMENT_LENGTH}
                                 </div>
@@ -192,8 +223,8 @@ const CommentField = React.memo(({ action, replyingTo = null, onPost, initialTex
                             onClick={handleComment}
                             disabled={isPosting || !comment.trim()}
                             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${isPosting || !comment.trim()
-                                    ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                                    : 'bg-blue-500 hover:bg-blue-600 text-white shadow-sm hover:shadow'
+                                ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                : 'bg-blue-500 hover:bg-blue-600 text-white shadow-sm hover:shadow'
                                 }`}
                         >
                             {isPosting ? (

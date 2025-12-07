@@ -1,7 +1,5 @@
-// manage-blogs.page.jsx
-
 import api from "../common/api";
-import { useContext, useState, useEffect, useCallback, useRef } from "react";
+import { useContext, useState, useEffect, useCallback } from "react";
 import { UserContext } from "../App";
 import { FilterPagination } from "../common/filter-pagination-data";
 import { Toaster } from "react-hot-toast";
@@ -9,473 +7,274 @@ import InPageNavigation from "../components/InPageNavigation";
 import Loader from "../components/Loader";
 import AnimationWrapper from "../common/page-animation";
 import { PostManCard, DraftManCard } from "../components/ManageBlogCard";
-
-const TABS = ["Published Posts", "Drafts", "Stories"];
+import { FiSearch, FiEdit3 } from "react-icons/fi";
+import { Link, useNavigate } from "react-router-dom";
 
 const ManageBlog = () => {
-    const {
-        userAuth: { access_token },
-    } = useContext(UserContext);
+    const { userAuth: { access_token } } = useContext(UserContext);
+    const navigate = useNavigate();
 
-    //
-    // ─── Local State & Loading Flags ───────────────────────────────────────────────
-    //
-    const [activeTabIndex, setActiveTabIndex] = useState(0); // 0 = Published, 1 = Drafts, 2 = Stories
-
-    // Search query (triggered when user presses Enter). When `query` changes, we re-fetch both sets.
+    const [activeTab, setActiveTab] = useState("Published");
     const [searchQuery, setSearchQuery] = useState("");
 
-    // Published posts state:
-    const [publishedData, setPublishedData] = useState({
-        results: [],
-        page: 1,
-        totalPages: 1,
-        totalDocs: 0,
+    const [blobs, setBlobs] = useState({
+        "Published": { results: [], page: 1, totalDocs: 0, deleteDocCount: 0 },
+        "Drafts": { results: [], page: 1, totalDocs: 0, deleteDocCount: 0 },
+        "Stories": { results: [], page: 1, totalDocs: 0, deleteDocCount: 0 }
     });
-    const [isLoadingPublished, setIsLoadingPublished] = useState(false);
-    const [errorPublished, setErrorPublished] = useState(null);
 
-    // Drafts state:
-    const [draftData, setDraftData] = useState({
-        results: [],
-        page: 1,
-        totalPages: 1,
-        totalDocs: 0,
-    });
-    const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
-    const [errorDrafts, setErrorDrafts] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-    // (Optional) Placeholder for “Stories” -- you can implement similarly later.
-    const [storyData, setStoryData] = useState({
-        results: [],
-        page: 1,
-        totalPages: 1,
-        totalDocs: 0,
-    });
-    const [isLoadingStories, setIsLoadingStories] = useState(false);
-    const [errorStories, setErrorStories] = useState(null);
-
-    const publishedDataRef = useRef(publishedData);
-    const draftDataRef = useRef(draftData);
-    const storyDataRef = useRef(storyData);
-
-    useEffect(() => {
-        publishedDataRef.current = publishedData;
-        draftDataRef.current = draftData;
-        storyDataRef.current = storyData;
-    }, [publishedData, draftData, storyData]);
-
-    //
-    // ─── Fetch Functions ────────────────────────────────────────────────────────────
-    //
-    const fetchPublished = useCallback(
-        async (pageNumber = 1) => {
-            if (!access_token) return;
-            setIsLoadingPublished(true);
-            setErrorPublished(null);
-
-            try {
-                const { data } = await api.post(
-                    "/get-user-blogs",
-                    {
-                        page: pageNumber,
-                        draft: false,
-                        query: searchQuery,
-                        deletedDocCount: 0,
-                    }
-                );
-
-                // Assume FilterPagination returns an object with { results, page, totalPages, totalDocs }
-                const formatted = await FilterPagination({
-                    state: publishedDataRef.current,
-                    arr_data: data.blogs,
-                    page: pageNumber,
-                    user: access_token,
-                    countRoute: "/get-user-blogs-count",
-                    data_to_send: { draft: false, query: searchQuery },
-                });
-
-                setPublishedData(formatted);
-            } catch (err) {
-                console.error("Error fetching published posts:", err);
-                setErrorPublished("Failed to load published posts. Please try again.");
-            } finally {
-                setIsLoadingPublished(false);
-            }
-        },
-        [access_token, searchQuery]
-    );
-
-    const fetchDrafts = useCallback(
-        async (pageNumber = 1) => {
-            if (!access_token) return;
-            setIsLoadingDrafts(true);
-            setErrorDrafts(null);
-
-            try {
-                const { data } = await api.post(
-                    "/get-user-blogs",
-                    {
-                        page: pageNumber,
-                        draft: true,
-                        query: searchQuery,
-                        deletedDocCount: 0,
-                    }
-                );
-
-                const formatted = await FilterPagination({
-                    state: draftDataRef.current,
-                    arr_data: data.blogs,
-                    page: pageNumber,
-                    user: access_token,
-                    countRoute: "/get-user-blogs-count",
-                    data_to_send: { draft: true, query: searchQuery },
-                });
-
-                setDraftData(formatted);
-            } catch (err) {
-                console.error("Error fetching drafts:", err);
-                setErrorDrafts("Failed to load draft posts. Please try again.");
-            } finally {
-                setIsLoadingDrafts(false);
-            }
-        },
-        [access_token, searchQuery]
-    );
-
-    // (Optional) If you later implement “Stories,” do something similar to fetchPublished/fetchDrafts:
-    const fetchStories = useCallback(async (pageNumber = 1) => {
-        if (!access_token) return;
-        setIsLoadingStories(true);
-        setErrorStories(null);
-        try {
-            // Placeholder: replace endpoint /get-user-stories if you build it
-            const { data } = await api.post(
-                "/get-user-stories",
-                { page: pageNumber, query: searchQuery }
-            );
-
-            const formatted = {
-                results: data.stories || [],
-                page: pageNumber,
-                totalPages: data.totalPages || 1,
-                totalDocs: data.totalDocs || data.stories.length || 0,
+    // Dynamic API endpoint and params based on active tab
+    const getFetchConfig = useCallback((tab, query, page) => {
+        if (tab === "Stories") {
+            return {
+                route: "/get-user-stories",
+                params: { page, query },
+                isStory: true
             };
-
-            setStoryData(formatted);
-        } catch (err) {
-            console.error("Error fetching stories:", err);
-            setErrorStories("Failed to load stories. Please try again.");
-        } finally {
-            setIsLoadingStories(false);
         }
-    }, [access_token, searchQuery]);
 
-    //
-    // ─── Effects ───────────────────────────────────────────────────────────────────
-    //
-    // 1) On initial mount or whenever the access_token or searchQuery changes, re‐fetch page 1
-    useEffect(() => {
+        const isDraft = tab === "Drafts";
+        return {
+            route: "/get-user-blogs",
+            params: {
+                page,
+                draft: isDraft,
+                query,
+                deletedDocCount: blobs[tab].deleteDocCount
+            },
+            isStory: false
+        };
+    }, [blobs]);
+
+
+    const fetchBlogs = useCallback(async ({ page = 1, tab = activeTab, query = searchQuery }) => {
+        // If we don't have a token yet, wait (App.jsx handles redirection if not logged in eventually)
         if (!access_token) return;
 
-        // Whenever query or token changes, reset to page 1 and refetch
-        setPublishedData((prev) => ({ ...prev, page: 1 }));
-        setDraftData((prev) => ({ ...prev, page: 1 }));
-        setStoryData((prev) => ({ ...prev, page: 1 }));
+        setLoading(true);
+        const { route, params, isStory } = getFetchConfig(tab, query, page);
 
-        // Fetch page 1 for each category
-        fetchPublished(1);
-        fetchDrafts(1);
-        // We leave Stories empty for now; if/when you implement it, call `fetchStories(1)`.
-    }, [access_token, searchQuery, fetchPublished, fetchDrafts, fetchStories]);
+        try {
+            // Relies on api.jsx interceptor for Authorization header
+            const { data } = await api.post(route, params);
 
-    //
-    // 2) Paginated fetch: Whenever publishedData.page changes (and is > 1), fetch new page.
-    useEffect(() => {
-        if (
-            access_token &&
-            publishedData.page > 1 &&
-            publishedData.page <= publishedData.totalPages
-        ) {
-            fetchPublished(publishedData.page);
+            const arr_data = isStory ? (data.stories || []) : (data.blogs || []);
+            const countRoute = isStory ? "/get-user-stories-count" : "/get-user-blogs-count";
+            const data_to_send = isStory ? { query } : { draft: params.draft, query };
+
+            const formattedData = await FilterPagination({
+                state: blobs[tab],
+                arr_data,
+                page,
+                countRoute,
+                data_to_send,
+                user: access_token
+            });
+
+            setBlobs(prev => ({ ...prev, [tab]: formattedData }));
+
+        } catch (err) {
+            console.error(`Error fetching ${tab}:`, err);
+        } finally {
+            setLoading(false);
         }
-    }, [access_token, publishedData.page, publishedData.totalPages, fetchPublished]);
+    }, [access_token, activeTab, searchQuery, getFetchConfig, blobs]);
 
-    // 3) Paginated fetch for drafts
+
+    // Initial Fetch & Search Fetch
     useEffect(() => {
-        if (
-            access_token &&
-            draftData.page > 1 &&
-            draftData.page <= draftData.totalPages
-        ) {
-            fetchDrafts(draftData.page);
+        if (access_token) {
+            if (searchQuery !== "") {
+                // Reset and fetch if searching
+                setBlobs(prev => ({
+                    ...prev,
+                    [activeTab]: { ...prev[activeTab], results: [], page: 1 }
+                }));
+                fetchBlogs({ page: 1, tab: activeTab, query: searchQuery });
+            } else {
+                // Only fetch if empty to avoid double fetching usually, but logic here ensures we fill data
+                if (blobs[activeTab].results.length === 0) {
+                    fetchBlogs({ page: 1, tab: activeTab, query: "" });
+                }
+            }
         }
-    }, [access_token, draftData.page, draftData.totalPages, fetchDrafts]);
+    }, [access_token, activeTab, searchQuery, blobs, fetchBlogs]);
 
-    // 4) (Optional) Paginated fetch for stories
-    useEffect(() => {
-        if (
-            access_token &&
-            storyData.page > 1 &&
-            storyData.page <= storyData.totalPages
-        ) {
-            fetchStories(storyData.page);
-        }
-    }, [access_token, storyData.page, storyData.totalPages, fetchStories]);
 
-    //
-    // ─── Event Handlers ────────────────────────────────────────────────────────────
-    //
-    const handleSearchInput = (e) => {
-        setSearchQuery(e.target.value.trim());
-        // Note: We only re‐fetch when the user actually presses Enter (below).
+    const handleSearch = (e) => {
+        const val = e.target.value;
+        setSearchQuery(val);
     };
 
-    const handleSearchKeyDown = (e) => {
+    const handleKeyDown = (e) => {
         if (e.key === "Enter") {
-            // If the query is non‐empty, we trigger the top‐level effect (because searchQuery changed)
-            // If it’s empty, we also reset (since searchQuery is already updated)
-            // (Above useEffect will fire automatically.)
+            // Search is reactive to state change in useEffect
         }
-    };
+    }
 
-    const clearSearch = () => {
-        setSearchQuery("");
-    };
-
-    const handlePublishedPageChange = (newPage) => {
-        if (newPage >= 1 && newPage <= publishedData.totalPages) {
-            setPublishedData((prev) => ({ ...prev, page: newPage }));
+    const loadMore = () => {
+        const currentTabState = blobs[activeTab];
+        // Only fetch if we have more docs than currently loaded
+        if (currentTabState.results.length < currentTabState.totalDocs) {
+            fetchBlogs({ page: currentTabState.page + 1 });
         }
-    };
+    }
 
-    const handleDraftsPageChange = (newPage) => {
-        if (newPage >= 1 && newPage <= draftData.totalPages) {
-            setDraftData((prev) => ({ ...prev, page: newPage }));
+    // Helper to update state from child components (delete)
+    const setTabState = (updater, tabName = activeTab) => {
+        setBlobs(prev => {
+            const newVal = updater(prev[tabName]);
+            return { ...prev, [tabName]: newVal };
+        });
+    }
+
+    // Check if user is logged in (optional, but good for redirect)
+    useEffect(() => {
+        if (access_token === null) {
+            // If explicitly null (logged out), redirect
+            navigate('/signin');
         }
-    };
+    }, [access_token, navigate]);
 
-    // (Optional) If you implement stories pagination:
-    const handleStoriesPageChange = (newPage) => {
-        if (newPage >= 1 && newPage <= storyData.totalPages) {
-            setStoryData((prev) => ({ ...prev, page: newPage }));
-        }
-    };
 
-    //
-    // ─── Render Helpers ────────────────────────────────────────────────────────────
-    //
-
-    const renderPublishedTab = () => {
-        if (isLoadingPublished) {
-            return <Loader />;
-        }
-        if (errorPublished) {
-            return <p className="text-red-600">{errorPublished}</p>;
-        }
-        if (!publishedData.results.length) {
-            return <p>No published posts found.</p>;
-        }
-
-        return (
-            <>
-                <div className="space-y-4">
-                    {publishedData.results.map((blog, idx) => (
-                        <AnimationWrapper
-                            key={blog._id || idx}
-                            transition={{ delay: idx * 0.04 }}
-                        >
-                            <PostManCard
-                                blog={{
-                                    ...blog,
-                                    index: idx,
-                                    setStateFuc: setPublishedData,
-                                }}
-                            />
-                        </AnimationWrapper>
-                    ))}
-                </div>
-
-                {/* Pagination Controls (Basic “Previous / Next”). You can enhance to numeric page buttons if desired. */}
-                <div className="mt-6 flex justify-center items-center space-x-4">
-                    <button
-                        className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-                        onClick={() => handlePublishedPageChange(publishedData.page - 1)}
-                        disabled={publishedData.page <= 1 || isLoadingPublished}
-                    >
-                        Previous
-                    </button>
-                    <span>
-                        Page {publishedData.page} of {publishedData.totalPages}
-                    </span>
-                    <button
-                        className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-                        onClick={() => handlePublishedPageChange(publishedData.page + 1)}
-                        disabled={publishedData.page >= publishedData.totalPages || isLoadingPublished}
-                    >
-                        Next
-                    </button>
-                </div>
-            </>
-        );
-    };
-
-    const renderDraftsTab = () => {
-        if (isLoadingDrafts) {
-            return <Loader />;
-        }
-        if (errorDrafts) {
-            return <p className="text-red-600">{errorDrafts}</p>;
-        }
-        if (!draftData.results.length) {
-            return <p>No Draft posts found.</p>;
-        }
-
-        return (
-            <>
-                <div className="space-y-4">
-                    {draftData.results.map((blog, idx) => (
-                        <AnimationWrapper
-                            key={blog._id || idx}
-                            transition={{ delay: idx * 0.04 }}
-                        >
-                            <DraftManCard
-                                blog={{
-                                    ...blog,
-                                    index: idx,
-                                    setStateFuc: setDraftData,
-                                }}
-                            />
-                        </AnimationWrapper>
-                    ))}
-                </div>
-
-                <div className="mt-6 flex justify-center items-center space-x-4">
-                    <button
-                        className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-                        onClick={() => handleDraftsPageChange(draftData.page - 1)}
-                        disabled={draftData.page <= 1 || isLoadingDrafts}
-                    >
-                        Previous
-                    </button>
-                    <span>
-                        Page {draftData.page} of {draftData.totalPages}
-                    </span>
-                    <button
-                        className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-                        onClick={() => handleDraftsPageChange(draftData.page + 1)}
-                        disabled={draftData.page >= draftData.totalPages || isLoadingDrafts}
-                    >
-                        Next
-                    </button>
-                </div>
-            </>
-        );
-    };
-
-    const renderStoriesTab = () => {
-        if (isLoadingStories) {
-            return <Loader />;
-        }
-        if (errorStories) {
-            return <p className="text-red-600">{errorStories}</p>;
-        }
-        if (!storyData.results.length) {
-            return <p>No stories found (coming soon!).</p>;
-        }
-
-        return (
-            <>
-                <div className="space-y-4">
-                    {storyData.results.map((story, idx) => (
-                        <AnimationWrapper
-                            key={story._id || idx}
-                            transition={{ delay: idx * 0.04 }}
-                        >
-                            {/* Replace <PostManCard> with a <StoryCard> once you build it */}
-                            <PostManCard
-                                blog={{
-                                    ...story,
-                                    index: idx,
-                                    setStateFuc: setStoryData,
-                                }}
-                            />
-                        </AnimationWrapper>
-                    ))}
-                </div>
-
-                <div className="mt-6 flex justify-center items-center space-x-4">
-                    <button
-                        className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-                        onClick={() => handleStoriesPageChange(storyData.page - 1)}
-                        disabled={storyData.page <= 1 || isLoadingStories}
-                    >
-                        Previous
-                    </button>
-                    <span>
-                        Page {storyData.page} of {storyData.totalPages}
-                    </span>
-                    <button
-                        className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-                        onClick={() => handleStoriesPageChange(storyData.page + 1)}
-                        disabled={storyData.page >= storyData.totalPages || isLoadingStories}
-                    >
-                        Next
-                    </button>
-                </div>
-            </>
-        );
-    };
-
-    //
-    // ─── Main Render ───────────────────────────────────────────────────────────────
-    //
     return (
-        <>
-            <h1 className="hidden md:block text-3xl font-semibold mb-6">
-                Manage Posts
-            </h1>
-            <Toaster />
+        <AnimationWrapper>
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-screen">
+                <Toaster />
 
-            {/* ── Search Input ─────────────────────────────────────────────────────── */}
-            <div className="relative max-w-md mx-auto mb-8">
-                <input
-                    type="search"
-                    value={searchQuery}
-                    placeholder="Search Posts"
-                    className="w-full px-4 py-3 rounded-full border-2 border-black placeholder:text-gray-500 focus:outline-none focus:border-blue-500"
-                    onChange={handleSearchInput}
-                    onKeyDown={handleSearchKeyDown}
-                />
-                {searchQuery && (
-                    <button
-                        className="absolute right-4 top-2.5 text-gray-600"
-                        onClick={clearSearch}
-                        aria-label="Clear search"
-                    >
-                        ✕
-                    </button>
-                )}
-                <i className="fi fi-rr-search absolute left-4 top-3 text-xl pointer-events-none"></i>
+                {/* Header Section */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2 ml-10 lg:ml-0">
+                            Manage Blogs
+                        </h1>
+                        <p className="text-gray-500 dark:text-gray-400 ml-10 lg:ml-0">
+                            Create, edit, and manage your content efficiently.
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        {/* Search Bar */}
+                        <div className="relative flex-1 md:w-64 group">
+                            <input
+                                type="search"
+                                value={searchQuery}
+                                onChange={handleSearch}
+                                onKeyDown={handleKeyDown}
+                                placeholder="Search..."
+                                className="w-full pl-10 pr-4 py-2.5 rounded-full bg-gray-100 dark:bg-[#212121] border-transparent focus:bg-white dark:focus:bg-[#212121] border focus:border-gray-300 dark:focus:border-gray-700 outline-none transition-all duration-300 text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
+                            />
+                            <FiSearch className="absolute left-3.5 top-3 text-gray-400 group-focus-within:text-gray-600 dark:group-focus-within:text-gray-200 transition-colors" size={18} />
+                        </div>
+
+                        {/* Create Button */}
+                        <Link to="/editor" className="hidden md:flex items-center justify-center w-10 h-10 md:w-auto md:px-4 md:py-2.5 bg-gray-900 dark:bg-white text-white dark:text-black rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-300 shadow-lg hover:shadow-xl">
+                            <FiEdit3 className="md:mr-2" size={20} />
+                            <span className="hidden md:inline font-medium">Write</span>
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Mobile Floating Action Button */}
+                <Link to="/editor" className="md:hidden fixed bottom-24 right-6 z-50 w-14 h-14 bg-black dark:bg-white text-white dark:text-black rounded-full flex items-center justify-center shadow-2xl hover:scale-105 transition-transform" aria-label="Create new blog">
+                    <FiEdit3 size={24} />
+                </Link>
+
+                {/* Tabs & Content */}
+                <InPageNavigation
+                    routes={["Published", "Drafts", "Stories"]}
+                    defaultActiveIndex={0}
+                    defaultHidden={[]}
+                    onRouteChange={(newTab) => setActiveTab(newTab)}
+                >
+
+                    {/* PUBLISHED */}
+                    <BlogList
+                        type="Published"
+                        state={blobs["Published"]}
+                        fetchMore={loadMore}
+                        loading={loading && activeTab === 'Published'}
+                        setStateFunc={(val) => setTabState(val, "Published")}
+                    />
+
+                    {/* DRAFTS */}
+                    <BlogList
+                        type="Drafts"
+                        state={blobs["Drafts"]}
+                        fetchMore={loadMore}
+                        loading={loading && activeTab === 'Drafts'}
+                        setStateFunc={(val) => setTabState(val, "Drafts")}
+
+                    />
+
+                    {/* STORIES */}
+                    <BlogList
+                        type="Stories"
+                        state={blobs["Stories"]}
+                        fetchMore={loadMore}
+                        loading={loading && activeTab === 'Stories'}
+                        setStateFunc={(val) => setTabState(val, "Stories")}
+                    />
+
+                </InPageNavigation>
+
             </div>
-
-            {/* ── Tab Navigation & Content ──────────────────────────────────────────── */}
-            <InPageNavigation
-                routes={TABS}
-                activeIndex={activeTabIndex}
-                onTabChange={setActiveTabIndex}
-            >
-                {/* ── Published Posts Tab ───────────────────────────────────────────── */}
-                {renderPublishedTab()}
-
-                {/* ── Drafts Tab ────────────────────────────────────────────────────── */}
-                {renderDraftsTab()}
-
-                {/* ── Stories Tab ───────────────────────────────────────────────────── */}
-                {renderStoriesTab()}
-            </InPageNavigation>
-        </>
+        </AnimationWrapper>
     );
 };
+
+// Sub-component for listing blogs
+const BlogList = ({ type, state, fetchMore, loading, setStateFunc }) => {
+
+    return (
+        <div className="py-6">
+            {state.results.length === 0 && !loading ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50/50 dark:bg-zinc-900/50">
+                    <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+                        {type === "Drafts" ? <FiEdit3 size={32} className="text-gray-400" /> : <FiSearch size={32} className="text-gray-400" />}
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-200">No {type.toLowerCase()} found</h3>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1 max-w-sm">
+                        {type === "Published" ? "Start writing your first blog post today!" : "You don't have nothing in drafts."}
+                    </p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {state.results.map((blog, i) => (
+                        <AnimationWrapper key={i} transition={{ delay: i * 0.05 }}>
+                            {type === "Drafts" ? (
+                                <DraftManCard
+                                    blog={{ ...blog, index: i, setStateFuc: setStateFunc }}
+                                />
+                            ) : (
+                                <PostManCard
+                                    blog={{ ...blog, index: i, setStateFuc: setStateFunc }}
+                                />
+                            )}
+                        </AnimationWrapper>
+                    ))}
+                </div>
+            )}
+
+            {loading && (
+                <div className="flex justify-center py-10">
+                    <Loader />
+                </div>
+            )}
+
+            {/* Load More Button */}
+            {state.totalDocs > state.results.length && !loading && (
+                <button
+                    onClick={fetchMore}
+                    className="w-full py-3 mt-8 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                >
+                    Load More
+                </button>
+            )}
+        </div>
+    );
+}
 
 export default ManageBlog;

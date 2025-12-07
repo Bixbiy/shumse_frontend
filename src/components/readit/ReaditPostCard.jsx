@@ -11,6 +11,7 @@ import { getDay } from '../../common/date';
 import toast from 'react-hot-toast';
 import { useSocket } from '../../context/SocketContext';
 import OptimizedImage from '../OptimizedImage';
+import VerificationBadge from '../VerificationBadge';
 
 const ReaditPostCard = memo(({ post }) => {
     const navigate = useNavigate();
@@ -152,7 +153,7 @@ const ReaditPostCard = memo(({ post }) => {
         >
             {/* New post indicator */}
             {isNew && (
-                <div className="absolute top-3 right-3 px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded-full shadow-lg">
+                <div className="absolute top-3 right-3 px-2 py-1 bg-gradient-to-r from-orange-500 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg">
                     NEW
                 </div>
             )}
@@ -187,7 +188,10 @@ const ReaditPostCard = memo(({ post }) => {
                                     <span className="text-gray-300 dark:text-gray-700">•</span>
                                 </>
                             )}
-                            <span>u/{author?.personal_info?.username}</span>
+                            <span className="flex items-center gap-1">
+                                u/{author?.personal_info?.username}
+                                {author?.personal_info?.isVerified && <VerificationBadge size={12} />}
+                            </span>
                             <span className="text-gray-300 dark:text-gray-700">•</span>
                             <span>{getDay(createdAt)}</span>
                         </div>

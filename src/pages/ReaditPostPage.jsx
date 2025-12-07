@@ -48,7 +48,7 @@ const ErrorDisplay = () => (
         </p>
         <Link
             to="/readit"
-            className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-shadow"
+            className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-shadow"
         >
             <i className="fi fi-rr-arrow-left mr-2"></i> Back to Home
         </Link>

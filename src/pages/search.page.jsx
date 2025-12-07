@@ -19,7 +19,7 @@ const tabs = [
 // Modern glassmorphism tab style
 const tabClasses = (active) =>
   `px-6 py-2 mx-1 rounded-xl font-semibold transition-all duration-300
-   shadow-md backdrop-blur-md border border-black-200
+   shadow-md backdrop-blur-md border border-gray-200
    ${active
     ? 'bg-gradient-to-tr from-primary-600 to-primary-500 text-white scale-105 shadow-lg'
     : 'bg-white/60 text-primary-700 hover:bg-primary-600 hover:text-white'
@@ -30,22 +30,25 @@ const SkeletonCard = () => (
 );
 
 const SearchResultCard = React.memo(({ item, activeTab, searchedTag }) => {
+  // Unwrap data if wrapped (common in 'all' search results)
+  const data = (activeTab === 'all' && item.data) ? item.data : item;
+
   let content = null;
   const type = activeTab === 'all' ? item.type : activeTab;
+
   if (type === 'posts' || type === 'post') {
-    content = <PostCard content={item} searchedTag={searchedTag} />;
+    content = <PostCard content={data} searchedTag={searchedTag} className="mb-0" />;
   } else if (type === 'stories' || type === 'story') {
-    content = <StoryCard story={item} />;
+    content = <StoryCard story={data} />;
   } else if (type === 'users' || type === 'user') {
-    content = <UserCard user={item} fallbackImage="/imgs/default-avatar.png" />;
+    content = <UserCard user={data} fallbackImage="/imgs/default-avatar.png" />;
   }
   return (
     <motion.div
       className="transition-transform"
-      whileHover={{ scale: 1.04, boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)' }}
     >
       {content}
-    </motion.div>
+    </motion.div >
   );
 });
 
